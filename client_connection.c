@@ -44,7 +44,7 @@ int client_connection()
     client_name[strcspn(client_name, "\n")] = 0;
 
     // Enviando nombre de usuario al server
-    if (send(client_socket, client_name, strlen(client_name), 0) < 0) {
+    if (send(client_socket, client_name, strlen(client_name), "REGISTRO") < 0) {
         perror("Unable to send user name");
         close(client_socket);
         return -1;
