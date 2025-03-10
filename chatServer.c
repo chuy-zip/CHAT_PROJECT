@@ -33,14 +33,14 @@ int main(int argc, char *argv[]) {
         return 1; 
     }
 
-    int port = atoi(argv[1]);  // Convertir el puerto a entero
+    int port = atoi(argv[1]);
     printf("Server name: %s \nListening on port: %d \n", argv[0], port);
     
     int server_fd, new_socket;
     struct sockaddr_in address;
     int addrlen = sizeof(address);
     char buffer[BUFFER_SIZE] = {0};
-    char *hello = "Hello, World!";
+    char *hello = "Hello, World from chat server";
 
     // the socket of scokets, the server socket :o
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
 
     // testing to send a hello world to a client
     send(new_socket, hello, strlen(hello), 0);
-    printf("Mensaje 'Hello, World!' enviado al cliente.\n");
+    printf("Mensaje 'Hello, World from chat server!' enviado al cliente.\n");
 
     // client socket and closing server scoket at hte end
     close(new_socket);
