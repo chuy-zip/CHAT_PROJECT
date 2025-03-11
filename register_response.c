@@ -8,22 +8,15 @@
 # include <netinet/in.h>
 
 int register_response(int socket, char buffer[], int buffer_size)
-{
-    if (read(socket, buffer, buffer_size) < 0) {
-        perror("Error while reading query from client");
-        close(socket);
-        return -1;
-    }
-    
-    printf("Received message from client: %s\n", buffer);
-    
+{    
     cJSON *client = cJSON_Parse(buffer);
     cJSON *response = cJSON_CreateObject();
 
     cJSON *tipo = cJSON_GetObjectItem(client, "tipo");
     cJSON *usuario = cJSON_GetObjectItem(client, "usuario");
+    cJSON *direccion = cJSON_GetObjectItem(client, "direccionIP");
 
-    if (tipo == NULL || usuario == NULL) {
+    if (tipo == NULL || usuario == NULL || direccion == NULL) {
         printf("Incorrect client data\n");
         cJSON_AddStringToObject(response, "response", "ERROR");
         cJSON_AddStringToObject(response, "razon", "Datos de usuario inválidos");

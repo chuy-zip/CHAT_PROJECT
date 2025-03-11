@@ -41,7 +41,10 @@ int client_connection(int server_port, char server_ip_address[8])
         return -1;
     }
     
-    printf("Connected to the server successfully!\n");
+    printf("\nConnected to the server successfully!\n");
+
+    char client_ip[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(server_address.sin_addr), client_ip, INET_ADDRSTRLEN);
 
     return client_socket;
 }
@@ -50,9 +53,9 @@ int main(int argc, char const *argv[])
 {
     int socket = client_connection(50213, "0.0.0.0");
 
-    cJSON *test = client_register("Dandelion", socket);
+    cJSON *test = client_register("Dandelion", "1.1.1.1.1.1.1.1.1", socket);
 
-    printf("Test: %s\n", cJSON_Print(test));
+    printf("\nTest: %s\n", cJSON_Print(test));
 
     return 0;
 }

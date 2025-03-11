@@ -82,7 +82,25 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    register_response(new_socket, buffer, BUFFER_SIZE);
+    if (read(new_socket, buffer, BUFFER_SIZE) < 0) {
+        perror("Error while reading query from client");
+        close(new_socket);
+        return -1;
+    }
+    
+    printf("Received message from client: %s\n", buffer);
+
+    cJSON *client = cJSON_Parse(buffer);
+    cJSON *tipo = cJSON_GetObjectItem(client, "tipo");
+
+    if (strcmp(tipo->valuestring, "REGISTRO") == 0) {
+        register_response(new_socket, buffer, BUFFER_SIZE);
+
+    } else if (strcmp(tipo->valuestring, "BROADCAST") == 0) {
+
+    } /* And so on */
+    
+
 
     // client socket and closing server scoket at hte end
     close(new_socket);

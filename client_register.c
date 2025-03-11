@@ -16,7 +16,7 @@
 * @return cJSON*: Objeto JSON con los datos del cliente.
 * @return NULL: Error.
 */
-cJSON* client_register(char client_name[10], int client_socket)
+cJSON* client_register(char client_name[10], char client_ip[], int client_socket)
 {
     char server_response[BUFFER_SIZE];
     
@@ -24,6 +24,7 @@ cJSON* client_register(char client_name[10], int client_socket)
     cJSON *client = cJSON_CreateObject();
     cJSON_AddStringToObject(client, "tipo", "REGISTRO");
     cJSON_AddStringToObject(client, "usuario", client_name);
+    cJSON_AddStringToObject(client, "direccionIP", client_ip);
 
     char *client_json = cJSON_Print(client);
 
@@ -47,7 +48,7 @@ cJSON* client_register(char client_name[10], int client_socket)
     
     // Obteniendo respuesta del server
     cJSON *server = cJSON_Parse(server_response);
-    printf("Server response: %s\n", cJSON_Print(server));
+    printf("\nServer response: %s\n", cJSON_Print(server));
 
     // Verificando que no esté vacía
     if (server == NULL) {
@@ -77,7 +78,7 @@ cJSON* client_register(char client_name[10], int client_socket)
     free(client_json);
     
     // Éxito
-    printf("Welcome, %s\n", client_name);
+    printf("\nWelcome, %s\n", client_name);
 
     return client;
 }
