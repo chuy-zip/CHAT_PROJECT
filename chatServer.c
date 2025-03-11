@@ -29,9 +29,7 @@ void* handle_client(void* arg) {
     client_info_t* client_info = (client_info_t*)arg;
     int client_socket = client_info->socket;
     char buffer[BUFFER_SIZE] = {0};
-    char* welcome_message = "Welcome to the chat server!\n";
-
-    send(client_socket, welcome_message, strlen(welcome_message), 0);
+    char* welcome_message = "server got message\n";
 
     while (1) {
         // reading user 
@@ -43,6 +41,7 @@ void* handle_client(void* arg) {
 
         // raw message
         printf("Received raw message: %s\n", buffer);
+        send(client_socket, welcome_message, strlen(welcome_message), 0);
 
         // json parsing
         cJSON *json = cJSON_Parse(buffer);
@@ -67,7 +66,7 @@ void* handle_client(void* arg) {
             cJSON_Delete(json); 
             break;
         }
-
+        
         memset(buffer, 0, BUFFER_SIZE);
         cJSON_Delete(json);
     }
