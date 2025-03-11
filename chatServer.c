@@ -5,6 +5,10 @@
 #include <arpa/inet.h>
 #include <stdbool.h>
 #include <ctype.h>  // isdigit()
+#include <cjson/cJSON.h>
+#include <sys/socket.h>
+
+#include "register_response.c"
 
 #define MAX_CLIENTS 10
 #define BUFFER_SIZE 1024 
@@ -40,7 +44,7 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in address;
     int addrlen = sizeof(address);
     char buffer[BUFFER_SIZE] = {0};
-    char *hello = "Hello, World from chat server";
+    
 
     // the socket of scokets, the server socket :o
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
@@ -78,9 +82,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // testing to send a hello world to a client
-    send(new_socket, hello, strlen(hello), 0);
-    printf("Mensaje 'Hello, World from chat server!' enviado al cliente.\n");
+    register_response(new_socket, buffer, BUFFER_SIZE);
 
     // client socket and closing server scoket at hte end
     close(new_socket);
