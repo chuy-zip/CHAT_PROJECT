@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <ctype.h>  // isdigit()
+#include <cjson/cJSON.h>
 
 // checking if string is number
 bool is_number(const char *s) {
@@ -15,6 +16,18 @@ bool is_number(const char *s) {
         }
     }
     return true;
+}
+
+char* create_exit_json(const char* username) {
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "tipo", "EXIT");
+    cJSON_AddStringToObject(root, "usuario", username);
+    cJSON_AddStringToObject(root, "estado", "");
+
+    char *json_string = cJSON_Print(root);
+    cJSON_Delete(root);
+
+    return json_string;
 }
 
 int main(int argc, char const* argv[]) {
@@ -39,13 +52,13 @@ int main(int argc, char const* argv[]) {
     int port = atoi(argv[3]);
 
     // user data
-    printf("Nombre del cliente: %s\n", argv[0]);
-    printf("Nombre de usuario: %s\n", argv[1]);
-    printf("Conectando al servidor en la dirección IP: %s, puerto: %d...\n", argv[2], port);
+    printf("client: %s\n", argv[0]);
+    printf("username: %s\n", argv[1]);
+    printf("Connecting to server in IP: %s, port: %d...\n", argv[2], port);
 
     int status, valread, client_fd;
     struct sockaddr_in serv_addr;
-    char* hello = "Hello from client";
+    //char* hello = "Hello from client";
     char buffer[1024] = { 0 };
 
     // client socket
@@ -70,13 +83,40 @@ int main(int argc, char const* argv[]) {
         return -1;
     }
 
-    // communication wit srever
-    send(client_fd, hello, strlen(hello), 0);
-    printf("Hello message sent\n");
-    valread = read(client_fd, buffer, 1024 - 1);  // Leer hasta 1023 caracteres
-    printf("Respuesta del servidor: %s\n", buffer);
+    printf("Now connected. write meissages or exit to end connection.\n");
 
-    // client scoket
+    while (1) {
+      printf("Message: ");
+      fgets(buffer, 1024, stdin);
+      buffer[strcspn(buffer, "\n")] = 0;
+
+      if (strcmp(buffer, "exit") == 0) {
+          // exit json
+          char* exit_json = create_exit_json(argv[1]);
+          printf("Sending JSON: %s\n", exit_json);  
+          send(client_fd, exit_json, strlen(exit_json), 0);
+          free(exit_json); 
+
+          printf("Closing connection.\n");
+          break;
+      }
+
+      // client sending
+      send(client_fd, buffer, strlen(buffer), 0);
+
+      // receiving f
+      valread = read(client_fd, buffer, 1024 - 1);
+
+      if (valread <= 0) {
+          printf("Disconnected.\n");
+          break;
+      }
+
+      buffer[valread] = '\0';
+      printf("Server responded with: %s\n", buffer);
+      memset(buffer, 0, sizeof(buffer));
+  }
+
     close(client_fd);
     return 0;
 }
