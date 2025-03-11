@@ -11,8 +11,9 @@
 
 /*
 * @brief Registra al cliente en el servidor.
-* @param client_socket: Socket del cliente.
-* @param client_name: Nombre del cliente.
+* @param char[10]: client_name: Nombre del cliente.
+* @param char[]: client_ip: Dirección IP del cliente.
+* @param int: client_socket: Socket del cliente.
 * @return cJSON*: Objeto JSON con los datos del cliente.
 * @return NULL: Error.
 */

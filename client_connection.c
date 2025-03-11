@@ -11,8 +11,8 @@
 
 /*
 * @brief Establece la conexión con el servidor.
-* @param server_port: Puerto del servidor.
-* @param server_ip_address: Dirección IP del servidor.
+* @param int: server_port: Puerto del servidor.
+* @param char[8]: server_ip_address: Dirección IP del servidor.
 * @return int: Socket del cliente.
 * @return -1: Error.
 * @note Se debe cerrar el socket con la función "close()" cuando ya no se necesite.
