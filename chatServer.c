@@ -41,7 +41,6 @@ void* handle_client(void* arg) {
 
         // raw message
         printf("Received raw message: %s\n", buffer);
-        send(client_socket, welcome_message, strlen(welcome_message), 0);
 
         // json parsing
         cJSON *json = cJSON_Parse(buffer);
@@ -65,6 +64,17 @@ void* handle_client(void* arg) {
             }
             cJSON_Delete(json); 
             break;
+        }
+        
+        cJSON *accion = cJSON_GetObjectItemCaseSensitive(json, "accion");
+        if (accion != NULL && strcmp(accion->valuestring, "BROADCAST") == 0) {
+            // free the user
+            cJSON *nombre_emisor = cJSON_GetObjectItemCaseSensitive(json, "nombre_emisor");
+            cJSON *mensaje = cJSON_GetObjectItemCaseSensitive(json, "mensaje");
+            if (nombre_emisor != NULL && mensaje != NULL) {
+                printf("User: %s just send the message: %s\n", nombre_emisor->valuestring, mensaje->valuestring);
+                send(client_socket, welcome_message, strlen(welcome_message), 0);
+            }
         }
         
         memset(buffer, 0, BUFFER_SIZE);

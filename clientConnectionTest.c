@@ -33,7 +33,7 @@ void handle_exit(int client_fd, const char *username) {
 }
 
 
-void handle_broadcast_global(int client_fd) {
+void handle_broadcast_global(int client_fd, const char *username) {
     char buffer[1024] = {0};
     int valread;
     
@@ -48,8 +48,20 @@ void handle_broadcast_global(int client_fd) {
           printf("Closing global chat.\n");
           break;
         }
+        
+        cJSON *root = cJSON_CreateObject();
+        cJSON_AddStringToObject(root, "accion", "BROADCAST");
+        cJSON_AddStringToObject(root, "nombre_emisor", username);
+        cJSON_AddStringToObject(root, "mensaje", buffer);
+        char *broadcast_json = cJSON_Print(root);
+        cJSON_Delete(root);
 
-        send(client_fd, buffer, strlen(buffer), 0);
+        // sending data for broadcast
+        printf("Sending JSON: %s\n", broadcast_json);
+        send(client_fd, broadcast_json, strlen(broadcast_json), 0);
+        free(broadcast_json);
+        
+        //send(client_fd, buffer, strlen(buffer), 0);
 
         valread = read(client_fd, buffer, 1024 - 1);
 
@@ -142,7 +154,7 @@ int main(int argc, char const* argv[]) {
                 printf("|                        GLOBAL CHAT                        |\n");
                 printf("+-----------------------------------------------------------+\n");
   
-                handle_broadcast_global(client_fd);
+                handle_broadcast_global(client_fd, argv[1]);
                 
                 break;
             case 2:
