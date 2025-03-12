@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 
 #include "register_response.c"
+#include "dynamic_array.c"
 
 #define MAX_CLIENTS 10
 #define BUFFER_SIZE 1024 
@@ -22,6 +23,10 @@ bool is_number(const char *s) {
 }
 
 int main(int argc, char *argv[]) {
+    Array client_list; // Defining home-made dynamic list https://stackoverflow.com/questions/3536153/c-dynamically-growing-array
+
+    init_array(&client_list, 1);
+
     if (argc != 2) {
         printf("\nError: expected 2 arguments but found: %d", argc);
         printf("\nCorrect usage: ./<serverName> <port>");
@@ -94,7 +99,22 @@ int main(int argc, char *argv[]) {
     cJSON *tipo = cJSON_GetObjectItem(client, "tipo");
 
     if (strcmp(tipo->valuestring, "REGISTRO") == 0) {
-        register_response(new_socket, buffer, BUFFER_SIZE);
+        if(register_response(new_socket, buffer, BUFFER_SIZE) < 0) {
+            printf("Unable to register");
+            cJSON_Delete(client);
+
+        } else {
+            cJSON_DeleteItemFromObject(client, "tipo");
+            cJSON_AddStringToObject(client, "estado", "Activo");
+            insert_array(&client_list, client);
+            printf("\nUser registered successfully!\n");
+            for (size_t i = 0; i < client_list.used; i++) {
+                char *json_str = cJSON_Print(client_list.array[i]);
+                printf("\nCliente %zu:\n%s\n", i + 1, json_str);
+                free(json_str);
+            }
+            cJSON_Delete(client);
+        }
 
     } else if (strcmp(tipo->valuestring, "BROADCAST") == 0) {
 
@@ -105,6 +125,7 @@ int main(int argc, char *argv[]) {
     // client socket and closing server scoket at hte end
     close(new_socket);
     close(server_fd);
+    free_array(&client_list);
     
     return 0;
 }

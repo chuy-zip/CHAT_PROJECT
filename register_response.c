@@ -7,6 +7,13 @@
 # include <sys/socket.h>
 # include <netinet/in.h>
 
+/*
+* @brief Responde a la solicitud "REGISTRO" de un cliente
+* @param int: Socket del cliente
+* @param char[]: Buffer que contiene el JSON de la soliocitud
+* @param int: Tamaño del buffer
+* @return cJSON: Respuesta a la solicitud
+*/
 int register_response(int socket, char buffer[], int buffer_size)
 {    
     cJSON *client = cJSON_Parse(buffer);
@@ -33,6 +40,7 @@ int register_response(int socket, char buffer[], int buffer_size)
 
     send(socket, cJSON_Print(response), strlen(cJSON_Print(response)), 0);
     printf("Message: %s\n sended to client.\n", cJSON_Print(response));
+    cJSON_Delete(response);
 
     return 0;
 }
