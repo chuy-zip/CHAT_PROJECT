@@ -5,6 +5,8 @@
 #include <arpa/inet.h>
 #include <stdbool.h>
 #include <ctype.h>  // isdigit()
+#include <pthread.h>
+#include <cjson/cJSON.h>
 #include <cjson/cJSON.h>
 #include <sys/socket.h>
 
@@ -20,6 +22,74 @@ bool is_number(const char *s) {
         }
     }
     return true;
+}
+
+typedef struct {
+    int socket;
+    struct sockaddr_in address;
+    char username[50]; 
+} client_info_t;
+
+void* handle_client(void* arg) {
+    client_info_t* client_info = (client_info_t*)arg;
+    int client_socket = client_info->socket;
+    char buffer[BUFFER_SIZE] = {0};
+    char* welcome_message = "server got message\n";
+
+    while (1) {
+        // reading user 
+        int valread = read(client_socket, buffer, BUFFER_SIZE);
+        if (valread <= 0) {
+            printf("Client disconnected.\n");
+            break;
+        }
+
+        // raw message
+        printf("Received raw message: %s\n", buffer);
+
+        // json parsing
+        cJSON *json = cJSON_Parse(buffer);
+        if (json == NULL) {
+            printf("Error al parsear JSON. \n");
+            continue;
+        }
+
+        // printing json
+        char *json_str = cJSON_Print(json);
+        printf("Parsed JSON: %s\n", json_str);
+        free(json_str);
+
+        // checking tipo of json
+        cJSON *tipo = cJSON_GetObjectItemCaseSensitive(json, "tipo");
+        if (tipo != NULL && strcmp(tipo->valuestring, "EXIT") == 0) {
+            // free the user
+            cJSON *usuario = cJSON_GetObjectItemCaseSensitive(json, "usuario");
+            if (usuario != NULL) {
+                printf("User: %s requested to exit.\n", usuario->valuestring);
+            }
+            cJSON_Delete(json); 
+            break;
+        }
+        
+        cJSON *accion = cJSON_GetObjectItemCaseSensitive(json, "accion");
+        if (accion != NULL && strcmp(accion->valuestring, "BROADCAST") == 0) {
+            // free the user
+            cJSON *nombre_emisor = cJSON_GetObjectItemCaseSensitive(json, "nombre_emisor");
+            cJSON *mensaje = cJSON_GetObjectItemCaseSensitive(json, "mensaje");
+            if (nombre_emisor != NULL && mensaje != NULL) {
+                printf("User: %s just send the message: %s\n", nombre_emisor->valuestring, mensaje->valuestring);
+                send(client_socket, welcome_message, strlen(welcome_message), 0);
+            }
+        }
+        
+        memset(buffer, 0, BUFFER_SIZE);
+        cJSON_Delete(json);
+    }
+
+    // closing socket
+    close(client_socket);
+    free(client_info);
+    pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[]) {
@@ -78,7 +148,7 @@ int main(int argc, char *argv[]) {
     char ip[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &(address.sin_addr), ip, INET_ADDRSTRLEN);
 
-    printf("Servidor escuchando en la dirección IP: %s, puerto: %d...\n", ip, port);
+    printf("Server listening on IP: %s, port: %d...\n", ip, port);
 
     // new conections
     if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
@@ -121,6 +191,35 @@ int main(int argc, char *argv[]) {
     } /* And so on */
     
 
+    while (1) {
+        // Aceptar una nueva conexión
+        if ((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
+            perror("Accept failed");
+            continue;
+        }
+
+        // showing new connection
+        char client_ip[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(address.sin_addr), client_ip, INET_ADDRSTRLEN);
+        printf("New client connected from: %s\n", client_ip);
+
+        client_info_t* client_info = (client_info_t*)malloc(sizeof(client_info_t));
+        client_info->socket = new_socket;
+        client_info->address = address;
+
+        // thread for handling connect
+        pthread_t thread_id;
+        if (pthread_create(&thread_id, NULL, handle_client, (void*)client_info) != 0) {
+            perror("Error creating thread");
+            close(new_socket);
+            free(client_info);
+        }
+
+        // detaching thread at the end
+        pthread_detach(thread_id);
+    }
+
+    // Closing server
 
     // client socket and closing server scoket at hte end
     close(new_socket);
