@@ -27,55 +27,98 @@ bool is_number(const char *s) {
 typedef struct {
     int socket;
     struct sockaddr_in address;
-    char username[50]; 
+    char username[50];
+    Array *client_array;
 } client_info_t;
 
 void* handle_client(void* arg) {
     client_info_t* client_info = (client_info_t*)arg;
     int client_socket = client_info->socket;
+    Array *client_list = client_info->client_array;
     char buffer[BUFFER_SIZE] = {0};
-    char* welcome_message = "server got message\n";
+    char client_ip[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(client_info->address.sin_addr), client_ip, INET_ADDRSTRLEN);
+    bool repeated_flag = false;
+    char* welcome_message = "\nServer got message\n";
 
     while (1) {
         // reading user 
         int valread = read(client_socket, buffer, BUFFER_SIZE);
         if (valread <= 0) {
-            printf("Client disconnected.\n");
+            printf("\nClient disconnected.\n");
             break;
         }
 
         // raw message
-        printf("Received raw message: %s\n", buffer);
+        printf("\nReceived raw message: %s\n", buffer);
 
+        for (size_t i = 0; i < client_list->used; i++) {
+            char *client_list_str = cJSON_Print(client_list->array[i]);
+            printf("\nCliente %zu:\n%s\n", i + 1, client_list_str);
+            free(client_list_str);
+        }
+        
         // json parsing
-        cJSON *json = cJSON_Parse(buffer);
-        if (json == NULL) {
+        cJSON *client = cJSON_Parse(buffer);
+        if (client == NULL) {
             printf("Error al parsear JSON. \n");
             continue;
         }
+        
+        cJSON_AddStringToObject(client, "direccionIP", client_ip);
 
         // printing json
-        char *json_str = cJSON_Print(json);
-        printf("Parsed JSON: %s\n", json_str);
+        char *json_str = cJSON_Print(client);
+        printf("\nParsed JSON: %s\n", json_str);
         free(json_str);
 
         // checking tipo of json
-        cJSON *tipo = cJSON_GetObjectItemCaseSensitive(json, "tipo");
-        if (tipo != NULL && strcmp(tipo->valuestring, "EXIT") == 0) {
-            // free the user
-            cJSON *usuario = cJSON_GetObjectItemCaseSensitive(json, "usuario");
-            if (usuario != NULL) {
-                printf("User: %s requested to exit.\n", usuario->valuestring);
+        cJSON *tipo = cJSON_GetObjectItemCaseSensitive(client, "tipo");
+        cJSON *client_name = cJSON_GetObjectItem(client, "usuario");
+
+        // Verificando "endpoints"
+        if (tipo != NULL && strcmp(tipo->valuestring, "REGISTRO") == 0) {
+
+            for (size_t i = 0; i < client_list->used; i++) {
+                cJSON *client_list_name = cJSON_GetObjectItem(client_list->array[i], "usuario");
+                cJSON *client_list_ip = cJSON_GetObjectItem(client_list->array[i], "direccionIP");
+
+                if (strcmp(client_name->valuestring, client_list_name->valuestring) == 0 || strcmp(client_ip, client_list_ip->valuestring) == 0) {
+                    repeated_flag = true;
+                }
             }
-            cJSON_Delete(json); 
-            break;
-        }
+
+            if(register_response(client_socket, buffer, BUFFER_SIZE, repeated_flag) < 0 || repeated_flag == true) {
+                printf("Unable to register");
+                
+            } else {
+                cJSON_DeleteItemFromObject(client, "tipo");
+                cJSON_AddStringToObject(client, "estado", "Activo");
+                insert_array(client_list, client);
+                printf("\nUser registered successfully!\n");
+                for (size_t i = 0; i < client_list->used; i++) {
+                    char *client_json_str = cJSON_Print(client_list->array[i]);
+                    printf("\nCliente %zu:\n%s\n", i + 1, client_json_str);
+                    free(client_json_str);
+                }
+            }
+    
+        }   else if (tipo != NULL && strcmp(tipo->valuestring, "EXIT") == 0) {
+                // free the user
+                cJSON *usuario = cJSON_GetObjectItemCaseSensitive(client, "usuario");
+                if (usuario != NULL) {
+                    printf("User: %s requested to exit.\n", usuario->valuestring);
+                }
+                
+                cJSON_Delete(client); 
+                break;
+            }
         
-        cJSON *accion = cJSON_GetObjectItemCaseSensitive(json, "accion");
+        cJSON *accion = cJSON_GetObjectItemCaseSensitive(client, "accion");
         if (accion != NULL && strcmp(accion->valuestring, "BROADCAST") == 0) {
             // free the user
-            cJSON *nombre_emisor = cJSON_GetObjectItemCaseSensitive(json, "nombre_emisor");
-            cJSON *mensaje = cJSON_GetObjectItemCaseSensitive(json, "mensaje");
+            cJSON *nombre_emisor = cJSON_GetObjectItemCaseSensitive(client, "nombre_emisor");
+            cJSON *mensaje = cJSON_GetObjectItemCaseSensitive(client, "mensaje");
             if (nombre_emisor != NULL && mensaje != NULL) {
                 printf("User: %s just send the message: %s\n", nombre_emisor->valuestring, mensaje->valuestring);
                 send(client_socket, welcome_message, strlen(welcome_message), 0);
@@ -83,7 +126,7 @@ void* handle_client(void* arg) {
         }
         
         memset(buffer, 0, BUFFER_SIZE);
-        cJSON_Delete(json);
+        cJSON_Delete(client);
     }
 
     // closing socket
@@ -93,8 +136,7 @@ void* handle_client(void* arg) {
 }
 
 int main(int argc, char *argv[]) {
-    Array client_list; // Defining home-made dynamic list https://stackoverflow.com/questions/3536153/c-dynamically-growing-array
-
+    Array client_list; // Defining home-made dynamic list
     init_array(&client_list, 1);
 
     if (argc != 2) {
@@ -113,7 +155,7 @@ int main(int argc, char *argv[]) {
     }
 
     int port = atoi(argv[1]);
-    printf("Server name: %s \nListening on port: %d \n", argv[0], port);
+    printf("\nServer name: %s \nListening on port: %d \n", argv[0], port);
     
     int server_fd, new_socket;
     struct sockaddr_in address;
@@ -148,48 +190,7 @@ int main(int argc, char *argv[]) {
     char ip[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &(address.sin_addr), ip, INET_ADDRSTRLEN);
 
-    printf("Server listening on IP: %s, port: %d...\n", ip, port);
-
-    // new conections
-    if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
-        perror("Accept failed");
-        close(server_fd);
-        exit(EXIT_FAILURE);
-    }
-
-    if (read(new_socket, buffer, BUFFER_SIZE) < 0) {
-        perror("Error while reading query from client");
-        close(new_socket);
-        return -1;
-    }
-    
-    printf("Received message from client: %s\n", buffer);
-
-    cJSON *client = cJSON_Parse(buffer);
-    cJSON *tipo = cJSON_GetObjectItem(client, "tipo");
-
-    if (strcmp(tipo->valuestring, "REGISTRO") == 0) {
-        if(register_response(new_socket, buffer, BUFFER_SIZE) < 0) {
-            printf("Unable to register");
-            cJSON_Delete(client);
-
-        } else {
-            cJSON_DeleteItemFromObject(client, "tipo");
-            cJSON_AddStringToObject(client, "estado", "Activo");
-            insert_array(&client_list, client);
-            printf("\nUser registered successfully!\n");
-            for (size_t i = 0; i < client_list.used; i++) {
-                char *json_str = cJSON_Print(client_list.array[i]);
-                printf("\nCliente %zu:\n%s\n", i + 1, json_str);
-                free(json_str);
-            }
-            cJSON_Delete(client);
-        }
-
-    } else if (strcmp(tipo->valuestring, "BROADCAST") == 0) {
-
-    } /* And so on */
-    
+    printf("\nServer listening on IP: %s, port: %d...\n", ip, port);
 
     while (1) {
         // Aceptar una nueva conexión
@@ -201,11 +202,12 @@ int main(int argc, char *argv[]) {
         // showing new connection
         char client_ip[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &(address.sin_addr), client_ip, INET_ADDRSTRLEN);
-        printf("New client connected from: %s\n", client_ip);
+        printf("\nNew client connected from: %s\n", client_ip);
 
         client_info_t* client_info = (client_info_t*)malloc(sizeof(client_info_t));
         client_info->socket = new_socket;
         client_info->address = address;
+        client_info->client_array = &client_list;
 
         // thread for handling connect
         pthread_t thread_id;

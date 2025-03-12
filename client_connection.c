@@ -53,7 +53,7 @@ int main(int argc, char const *argv[])
 {
     int socket = client_connection(50213, "0.0.0.0");
 
-    cJSON *test = client_register("Dandelion", "1.1.1.1.1.1.1.1.1", socket);
+    cJSON *test = client_register("Dandelion", socket);
 
     printf("\nTest: %s\n", cJSON_Print(test));
 

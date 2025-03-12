@@ -12,12 +12,11 @@
 /*
 * @brief Registra al cliente en el servidor.
 * @param char[10]: client_name: Nombre del cliente.
-* @param char[]: client_ip: Dirección IP del cliente.
 * @param int: client_socket: Socket del cliente.
 * @return cJSON*: Objeto JSON con los datos del cliente.
 * @return NULL: Error.
 */
-cJSON* client_register(char client_name[10], char client_ip[], int client_socket)
+cJSON* client_register(char client_name[], int client_socket)
 {
     char server_response[BUFFER_SIZE];
     
@@ -25,7 +24,6 @@ cJSON* client_register(char client_name[10], char client_ip[], int client_socket
     cJSON *client = cJSON_CreateObject();
     cJSON_AddStringToObject(client, "tipo", "REGISTRO");
     cJSON_AddStringToObject(client, "usuario", client_name);
-    cJSON_AddStringToObject(client, "direccionIP", client_ip);
 
     char *client_json = cJSON_Print(client);
 
@@ -67,7 +65,7 @@ cJSON* client_register(char client_name[10], char client_ip[], int client_socket
 
     // Manejando error "Usuario repetido"
     if (respuesta != NULL && strcmp(respuesta->valuestring, "ERROR") == 0) {
-        printf("ERROR: %s", razon);
+        printf("ERROR: %s", cJSON_Print(razon));
         cJSON_Delete(server);
         close(client_socket);
         free(client_json);
