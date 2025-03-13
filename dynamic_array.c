@@ -1,3 +1,5 @@
+#include <cjson/cJSON.h>
+
 typedef struct {
     cJSON **array; // Arreglo de punteros a cJSON
     size_t used;
