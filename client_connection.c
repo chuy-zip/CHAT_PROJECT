@@ -10,6 +10,7 @@
 #include "client_register.c"
 #include "client_info.c"
 #include "client_state.c"
+#include "client_list.c"
 
 /*
 * @brief Establece la conexión con el servidor.
@@ -55,11 +56,13 @@ int main(int argc, char const *argv[])
 {
     int socket = client_connection(50213, "0.0.0.0");
 
-    // cJSON *userTest = client_register("Dandelion", socket);
+    cJSON *userTesto = client_register("Dandelion", socket);
 
     // cJSON *userTest = client_info("Dandelion", socket);
 
-    cJSON *userTest = client_state("Dandelion", "Ocupado", socket);
+    // cJSON *userTest = client_state("Dandelion", "Ocupado", socket);
+
+    cJSON *userTest = client_list(socket);
 
     printf("\nTest: %s\n", cJSON_Print(userTest));
 
