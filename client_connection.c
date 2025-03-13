@@ -8,6 +8,7 @@
 #include <cjson/cJSON.h>
 
 #include "client_register.c"
+#include "client_info.c"
 
 /*
 * @brief Establece la conexión con el servidor.
@@ -53,9 +54,11 @@ int main(int argc, char const *argv[])
 {
     int socket = client_connection(50213, "0.0.0.0");
 
-    cJSON *test = client_register("Dandelion", socket);
+    // cJSON *test = client_register("Dandelion", socket);
 
-    printf("\nTest: %s\n", cJSON_Print(test));
+    cJSON *userTest = client_info("Dandelion", socket);
+
+    printf("\nTest: %s\n", cJSON_Print(userTest));
 
     return 0;
 }

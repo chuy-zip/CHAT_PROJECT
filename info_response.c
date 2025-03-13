@@ -9,23 +9,21 @@
 # include <stdbool.h>
 
 /*
-* @brief Responde a la solicitud "REGISTRO" de un cliente
+* @brief Responde a la solicitud "MOSTRAR" de un cliente
 * @param int: Socket del cliente
-* @param char[]: Buffer que contiene el JSON de la soliocitud
+* @param char[]: Buffer que contiene el JSON de la solicitud
 * @param int: Tamaño del buffer
 * @return cJSON: Respuesta a la solicitud
 */
-int register_response(int socket, char buffer[], int buffer_size, bool repeated_flag)
+int info_response(int socket, char buffer[], int buffer_size, bool user_flag, cJSON *user_to_return)
 {    
     cJSON *client = cJSON_Parse(buffer);
     cJSON *response = cJSON_CreateObject();
 
-    cJSON *tipo = cJSON_GetObjectItem(client, "tipo");
     cJSON *usuario = cJSON_GetObjectItem(client, "usuario");
-    cJSON *direccion = cJSON_GetObjectItem(client, "direccionIP");
 
-    if (tipo == NULL || usuario == NULL || direccion ) {
-        printf("Incorrect client data\n");
+    if (usuario == NULL) {
+        printf("Incorrect user name\n");
         cJSON_AddStringToObject(response, "respuesta", "ERROR");
         cJSON_AddStringToObject(response, "razon", "Datos de usuario inválidos");
         send(socket, cJSON_Print(response), strlen(cJSON_Print(response)), 0);
@@ -35,10 +33,10 @@ int register_response(int socket, char buffer[], int buffer_size, bool repeated_
         close(socket);
         return -1;
     
-    } else if (repeated_flag) {
-        printf("\nUsername and/or ip address already logged in\n");
+    } else if (user_flag == false) {
+        printf("\nCouldn't find mentioned user\n");
         cJSON_AddStringToObject(response, "respuesta", "ERROR");
-        cJSON_AddStringToObject(response, "razon", "Nombre y/o dirección duplicados");
+        cJSON_AddStringToObject(response, "razon", "Usuario no encontrado");
         send(socket, cJSON_Print(response), strlen(cJSON_Print(response)), 0);
         printf("Message: %s\n sended to client.\n", cJSON_Print(response));
         cJSON_Delete(client);
@@ -47,8 +45,8 @@ int register_response(int socket, char buffer[], int buffer_size, bool repeated_
         return -1;
     }
 
-    // Enviando una respuesta OK al cliente
-    cJSON_AddStringToObject(response, "response", "OK");
+    // Enviando una respuesta con el usuario encontrado
+    cJSON_AddStringToObject(response, "respuesta", cJSON_Print(user_to_return));
 
     send(socket, cJSON_Print(response), strlen(cJSON_Print(response)), 0);
     printf("Message: %s\n sended to client.\n", cJSON_Print(response));

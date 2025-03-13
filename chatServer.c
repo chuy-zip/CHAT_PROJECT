@@ -11,6 +11,8 @@
 #include <sys/socket.h>
 
 #include "register_response.c"
+#include "info_response.c"
+
 #include "dynamic_array.c"
 
 #define MAX_CLIENTS 10
@@ -38,9 +40,8 @@ void* handle_client(void* arg) {
     char buffer[BUFFER_SIZE] = {0};
     char client_ip[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &(client_info->address.sin_addr), client_ip, INET_ADDRSTRLEN);
-    bool repeated_flag = false;
     char* welcome_message = "\nServer got message\n";
-
+    
     while (1) {
         // reading user 
         int valread = read(client_socket, buffer, BUFFER_SIZE);
@@ -48,10 +49,10 @@ void* handle_client(void* arg) {
             printf("\nClient disconnected.\n");
             break;
         }
-
+        
         // raw message
         printf("\nReceived raw message: %s\n", buffer);
-
+        
         for (size_t i = 0; i < client_list->used; i++) {
             char *client_list_str = cJSON_Print(client_list->array[i]);
             printf("\nCliente %zu:\n%s\n", i + 1, client_list_str);
@@ -66,18 +67,19 @@ void* handle_client(void* arg) {
         }
         
         cJSON_AddStringToObject(client, "direccionIP", client_ip);
-
+        
         // printing json
         char *json_str = cJSON_Print(client);
         printf("\nParsed JSON: %s\n", json_str);
         free(json_str);
-
+        
         // checking tipo of json
         cJSON *tipo = cJSON_GetObjectItemCaseSensitive(client, "tipo");
         cJSON *client_name = cJSON_GetObjectItem(client, "usuario");
-
+        
         // Verificando "endpoints"
         if (tipo != NULL && strcmp(tipo->valuestring, "REGISTRO") == 0) {
+            bool repeated_flag = false;
 
             for (size_t i = 0; i < client_list->used; i++) {
                 cJSON *client_list_name = cJSON_GetObjectItem(client_list->array[i], "usuario");
@@ -85,6 +87,7 @@ void* handle_client(void* arg) {
 
                 if (strcmp(client_name->valuestring, client_list_name->valuestring) == 0 || strcmp(client_ip, client_list_ip->valuestring) == 0) {
                     repeated_flag = true;
+                    break;
                 }
             }
 
@@ -112,6 +115,28 @@ void* handle_client(void* arg) {
                 
                 cJSON_Delete(client); 
                 break;
+        
+        }   else if (tipo != NULL && strcmp(tipo->valuestring, "MOSTRAR") == 0) {
+                bool user_flag = false;
+                cJSON *user_to_return = cJSON_CreateObject();
+
+                for (size_t i = 0; i < client_list->used; i++) {
+                    cJSON *client_list_name = cJSON_GetObjectItem(client_list->array[i], "usuario");
+
+                    if (strcmp(client_name->valuestring, client_list_name->valuestring) == 0) {
+                        user_flag = true;
+                        user_to_return = cJSON_Duplicate(client_list->array[i], 1);
+                        break;
+                    }
+                }
+
+                if(info_response(client_socket, buffer, BUFFER_SIZE, user_flag, user_to_return) < 0 || user_flag == false) {
+                    printf("Unable to find user");   
+                
+                } else {
+                    printf("User found");
+                }
+        
             }
         
         cJSON *accion = cJSON_GetObjectItemCaseSensitive(client, "accion");
