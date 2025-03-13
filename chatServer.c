@@ -12,6 +12,7 @@
 
 #include "register_response.c"
 #include "info_response.c"
+#include "state_response.c"
 
 #include "dynamic_array.c"
 
@@ -91,7 +92,7 @@ void* handle_client(void* arg) {
                 }
             }
 
-            if(register_response(client_socket, buffer, BUFFER_SIZE, repeated_flag) < 0 || repeated_flag == true) {
+            if(register_response(client_socket, buffer, repeated_flag) < 0 || repeated_flag == true) {
                 printf("Unable to register");
                 
             } else {
@@ -135,6 +136,29 @@ void* handle_client(void* arg) {
                 
                 } else {
                     printf("User found");
+                }
+        
+            }   else if (tipo != NULL && strcmp(tipo->valuestring, "ESTADO") == 0) {
+                bool user_flag = false;
+                int user_to_change_index;
+
+                for (size_t i = 0; i < client_list->used; i++) {
+                    cJSON *client_list_name = cJSON_GetObjectItem(client_list->array[i], "usuario");
+
+                    if (strcmp(client_name->valuestring, client_list_name->valuestring) == 0) {
+                        user_flag = true;
+                        user_to_change_index = i;
+                        break;
+                    }
+                }
+
+                if(state_response(client_socket, buffer, user_flag) < 0 || user_flag == false) {
+                    printf("Unable to find user");   
+                
+                } else {
+                    printf("User found");
+                        cJSON *state_to_change = cJSON_GetObjectItem(client_list->array[user_to_change_index], "estado");
+                        cJSON_ReplaceItemInObjectCaseSensitive(client_list->array[user_to_change_index], "estado", cJSON_CreateString(state_to_change->valuestring));
                 }
         
             }

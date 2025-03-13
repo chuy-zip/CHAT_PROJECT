@@ -11,7 +11,7 @@
 
 /*
 * @brief Obtiene la información de un usuario conectado.
-* @param char[10]: client_name: Nombre del cliente a buscar.
+* @param char[]: client_name: Nombre del cliente a buscar.
 * @param int: client_socket: Socket del cliente.
 * @return cJSON*: Objeto JSON con los datos del cliente.
 * @return NULL: Error.

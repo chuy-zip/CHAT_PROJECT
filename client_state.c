@@ -10,19 +10,20 @@
 #define BUFFER_SIZE 1024
 
 /*
-* @brief Registra al cliente en el servidor.
-* @param char[]: client_name: Nombre del cliente.
+* @brief Obtiene la información de un usuario conectado.
+* @param char[10]: client_name: Nombre del cliente a buscar.
 * @param int: client_socket: Socket del cliente.
 * @return cJSON*: Objeto JSON con los datos del cliente.
 * @return NULL: Error.
 */
-cJSON* client_register(char client_name[], int client_socket)
+cJSON* client_state(char client_name[], char client_state[], int client_socket)
 {
     char server_response[BUFFER_SIZE];
     
     // Añadiendo datos al objeto cliente
     cJSON *client = cJSON_CreateObject();
-    cJSON_AddStringToObject(client, "tipo", "REGISTRO");
+    cJSON_AddStringToObject(client, "tipo", "ESTADO");
+    cJSON_AddStringToObject(client, "estado", client_state);
     cJSON_AddStringToObject(client, "usuario", client_name);
 
     char *client_json = cJSON_Print(client);
@@ -77,7 +78,7 @@ cJSON* client_register(char client_name[], int client_socket)
     free(client_json);
     
     // Éxito
-    printf("\nWelcome, %s\n", client_name);
+    printf("Profile changed successfully");
 
     return client;
 }

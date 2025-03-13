@@ -9,25 +9,24 @@
 # include <stdbool.h>
 
 /*
-* @brief Responde a la solicitud "REGISTRO" de un cliente
+* @brief Responde a la solicitud "ESTADO" de un cliente
 * @param int: Socket del cliente
 * @param char[]: Buffer que contiene el JSON de la soliocitud
-* @param bool: Flag que indica si se encontró al usuario
+* @param bool: flag que indica si se encontró al usuario
 * @return cJSON: Respuesta a la solicitud
 */
-int register_response(int socket, char buffer[], bool repeated_flag)
+int state_response(int socket, char buffer[], bool user_flag)
 {    
     cJSON *client = cJSON_Parse(buffer);
     cJSON *response = cJSON_CreateObject();
 
     cJSON *tipo = cJSON_GetObjectItem(client, "tipo");
     cJSON *usuario = cJSON_GetObjectItem(client, "usuario");
-    cJSON *direccion = cJSON_GetObjectItem(client, "direccionIP");
 
-    if (tipo == NULL || usuario == NULL || direccion ) {
-        printf("Incorrect client data\n");
+    if (tipo == NULL || usuario == NULL) {
+        printf("Incorrect user data\n");
         cJSON_AddStringToObject(response, "respuesta", "ERROR");
-        cJSON_AddStringToObject(response, "razon", "Datos de usuario inválidos");
+        cJSON_AddStringToObject(response, "razon", "Estado inválido");
         send(socket, cJSON_Print(response), strlen(cJSON_Print(response)), 0);
         printf("Message: %s\n sended to client.\n", cJSON_Print(response));
         cJSON_Delete(client);
@@ -35,10 +34,10 @@ int register_response(int socket, char buffer[], bool repeated_flag)
         close(socket);
         return -1;
     
-    } else if (repeated_flag) {
-        printf("\nUsername and/or ip address already logged in\n");
+    } else if (user_flag == false) {
+        printf("\nUser not found\n");
         cJSON_AddStringToObject(response, "respuesta", "ERROR");
-        cJSON_AddStringToObject(response, "razon", "Nombre y/o dirección duplicados");
+        cJSON_AddStringToObject(response, "razon", "Usuario no encontrado");
         send(socket, cJSON_Print(response), strlen(cJSON_Print(response)), 0);
         printf("Message: %s\n sended to client.\n", cJSON_Print(response));
         cJSON_Delete(client);
