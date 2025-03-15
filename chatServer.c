@@ -190,6 +190,25 @@ void* handle_client(void* arg) {
                 send(client_socket, welcome_message, strlen(welcome_message), 0);
             }
         }
+        else if (accion != NULL && strcmp(accion->valuestring, "LISTA") == 0) {
+            cJSON *users_list = cJSON_CreateObject();
+            char str[20];
+            for (size_t i = 0; i < client_list->used; i++) {
+                sprintf(str, "%d", i);
+                cJSON_AddStringToObject(users_list, str, cJSON_Print(client_list->array[i]));
+                
+            }
+
+            if(list_response(client_socket, users_list) < 0) {
+                printf("Unable to get users list");   
+            
+            } else {
+                printf("Success");
+            }
+
+        }
+         
+
         
         memset(buffer, 0, BUFFER_SIZE);
         cJSON_Delete(client);
