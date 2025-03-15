@@ -76,6 +76,46 @@ void handle_broadcast_global(int client_fd, const char *username) {
     }
 }
 
+void request_user_list(int client_fd) {
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "tipo", "LISTA");
+    
+    char *request_json = cJSON_Print(root);
+    cJSON_Delete(root);
+
+    // Enviar la solicitud al servidor
+    printf("Solicitando lista de usuarios\n");
+    send(client_fd, request_json, strlen(request_json), 0);
+    free(request_json);
+
+    // Recibir respuesta del servidor
+    char buffer[1024] = {0};
+    int valread = read(client_fd, buffer, 1023);
+    
+    if (valread <= 0) {
+        printf("Error al recibir la lista de usuarios.\n");
+        return;
+    }
+
+    buffer[valread] = '\0';  // Asegurar terminación de cadena
+    printf("Respuesta recibida: %s\n", buffer);
+
+    // Parsear el JSON recibido
+    cJSON *response = cJSON_Parse(buffer);
+    if (response == NULL) {
+        printf("Error al parsear la respuesta del servidor.\n");
+        return;
+    }
+
+    printf("Usuarios conectados:\n");
+    cJSON *item;
+    cJSON_ArrayForEach(item, response) {
+        printf("- %s\n", item->valuestring);
+    }
+
+    cJSON_Delete(response);
+}
+
 int main(int argc, char const* argv[]) {
     // arguments check
     if (argc != 4) {
@@ -175,7 +215,7 @@ int main(int argc, char const* argv[]) {
                 printf("+-----------------------------------------------------------+\n");
                 printf("|                 LIST ALL USERS CONNECTED                  |\n");
                 printf("+-----------------------------------------------------------+\n");
-                // self explanatory
+                request_user_list(client_fd);
                 break;
             case 5:
                 printf("+-----------------------------------------------------------+\n");
