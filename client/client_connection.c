@@ -7,10 +7,14 @@
 #include <unistd.h>
 #include <cjson/cJSON.h>
 
-#include "client_register.c"
+#include "client_connection.h"
+#include "client_list.h"
+
+#include "client_register.h"
 #include "client_info.c"
 #include "client_state.c"
-#include "client_list.c"
+#include "client_send.c"
+#include "client_receive.c"
 
 /*
 * @brief Establece la conexión con el servidor.
@@ -50,21 +54,4 @@ int client_connection(int server_port, char server_ip_address[8])
     inet_ntop(AF_INET, &(server_address.sin_addr), client_ip, INET_ADDRSTRLEN);
 
     return client_socket;
-}
-
-int main(int argc, char const *argv[])
-{
-    int socket = client_connection(50213, "0.0.0.0");
-
-    cJSON *userTesto = client_register("Dandelion", socket);
-
-    // cJSON *userTest = client_info("Dandelion", socket);
-
-    // cJSON *userTest = client_state("Dandelion", "Ocupado", socket);
-
-    cJSON *userTest = client_list(socket);
-
-    printf("\nTest: %s\n", cJSON_Print(userTest));
-
-    return 0;
 }

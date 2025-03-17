@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <cjson/cJSON.h>
 
+#include "client_register.h"
+
 #define BUFFER_SIZE 1024
 
 /*
@@ -47,7 +49,7 @@ cJSON* client_register(char client_name[], int client_socket)
     
     // Obteniendo respuesta del server
     cJSON *server = cJSON_Parse(server_response);
-    printf("\nServer response: %s\n", cJSON_Print(server));
+    // printf("\nServer response: %s\n", cJSON_Print(server));
 
     // Verificando que no esté vacía
     if (server == NULL) {
@@ -63,7 +65,7 @@ cJSON* client_register(char client_name[], int client_socket)
     cJSON *respuesta = cJSON_GetObjectItem(server, "respuesta");
     cJSON *razon = cJSON_GetObjectItem(server, "razon");
 
-    // Manejando error "Usuario repetido"
+    // Manejando error
     if (respuesta != NULL && strcmp(respuesta->valuestring, "ERROR") == 0) {
         printf("ERROR: %s", cJSON_Print(razon));
         cJSON_Delete(server);
