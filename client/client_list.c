@@ -7,23 +7,24 @@
 #include <unistd.h>
 #include <cjson/cJSON.h>
 
-#define BUFFER_SIZE 1024
+#include "client_list.h"
+
+#define BUFFER_SIZE 2048
 
 /*
-* @brief Obtiene la información de un usuario conectado.
-* @param char[]: client_name: Nombre del cliente a buscar.
+* @brief Obtiene la información de todos los usuarios conectados.
 * @param int: client_socket: Socket del cliente.
-* @return cJSON*: Objeto JSON con los datos del cliente.
+* @return cJSON*: Objeto JSON con los datos de los clientes.
+* @note El JSON de respuesta tiene el siguiente formato: {"respuesta": {"0": {"nombre": "example", "direccionIP": "0.0.0.0.", ...}, "1": {"nombre": "example2", ...}}}
 * @return NULL: Error.
 */
-cJSON* client_info(char client_name[], int client_socket)
+cJSON* client_list(int client_socket)
 {
     char server_response[BUFFER_SIZE];
     
     // Añadiendo datos al objeto cliente
     cJSON *client = cJSON_CreateObject();
-    cJSON_AddStringToObject(client, "tipo", "MOSTRAR");
-    cJSON_AddStringToObject(client, "usuario", client_name);
+    cJSON_AddStringToObject(client, "tipo", "LISTA");
 
     char *client_json = cJSON_Print(client);
 
@@ -47,7 +48,7 @@ cJSON* client_info(char client_name[], int client_socket)
     
     // Obteniendo respuesta del server
     cJSON *server = cJSON_Parse(server_response);
-    printf("\nServer response: %s\n", cJSON_Print(server));
+    // printf("\nServer response: %s\n", cJSON_Print(server));
 
     // Verificando que no esté vacía
     if (server == NULL) {
@@ -63,7 +64,7 @@ cJSON* client_info(char client_name[], int client_socket)
     cJSON *respuesta = cJSON_GetObjectItem(server, "respuesta");
     cJSON *razon = cJSON_GetObjectItem(server, "razon");
 
-    // Manejando error "Usuario repetido"
+    // Manejando error
     if (respuesta != NULL && strcmp(respuesta->valuestring, "ERROR") == 0) {
         printf("ERROR: %s", cJSON_Print(razon));
         cJSON_Delete(server);
@@ -73,11 +74,8 @@ cJSON* client_info(char client_name[], int client_socket)
         return NULL;
     }
 
-    cJSON_Delete(server);
+    cJSON_Delete(client);
     free(client_json);
     
-    // Éxito
-    printf("Usuario encontrado: %s", cJSON_Print(respuesta));
-
-    return client;
+    return server;
 }

@@ -7,23 +7,24 @@
 #include <unistd.h>
 #include <cjson/cJSON.h>
 
+#include "client_register.h"
+
 #define BUFFER_SIZE 1024
 
 /*
-* @brief Obtiene la información de un usuario conectado.
-* @param char[10]: client_name: Nombre del cliente a buscar.
+* @brief Registra al cliente en el servidor.
+* @param char[]: client_name: Nombre del cliente.
 * @param int: client_socket: Socket del cliente.
 * @return cJSON*: Objeto JSON con los datos del cliente.
 * @return NULL: Error.
 */
-cJSON* client_state(char client_name[], char client_state[], int client_socket)
+cJSON* client_register(const char client_name[], int client_socket)
 {
     char server_response[BUFFER_SIZE];
     
     // Añadiendo datos al objeto cliente
     cJSON *client = cJSON_CreateObject();
-    cJSON_AddStringToObject(client, "tipo", "ESTADO");
-    cJSON_AddStringToObject(client, "estado", client_state);
+    cJSON_AddStringToObject(client, "tipo", "REGISTRO");
     cJSON_AddStringToObject(client, "usuario", client_name);
 
     char *client_json = cJSON_Print(client);
@@ -48,7 +49,7 @@ cJSON* client_state(char client_name[], char client_state[], int client_socket)
     
     // Obteniendo respuesta del server
     cJSON *server = cJSON_Parse(server_response);
-    printf("\nServer response: %s\n", cJSON_Print(server));
+    // printf("\nServer response: %s\n", cJSON_Print(server));
 
     // Verificando que no esté vacía
     if (server == NULL) {
@@ -64,7 +65,7 @@ cJSON* client_state(char client_name[], char client_state[], int client_socket)
     cJSON *respuesta = cJSON_GetObjectItem(server, "respuesta");
     cJSON *razon = cJSON_GetObjectItem(server, "razon");
 
-    // Manejando error "Usuario repetido"
+    // Manejando error
     if (respuesta != NULL && strcmp(respuesta->valuestring, "ERROR") == 0) {
         printf("ERROR: %s", cJSON_Print(razon));
         cJSON_Delete(server);
@@ -78,7 +79,7 @@ cJSON* client_state(char client_name[], char client_state[], int client_socket)
     free(client_json);
     
     // Éxito
-    printf("Profile changed successfully");
+    printf("\nWelcome, %s\n", client_name);
 
     return client;
 }
