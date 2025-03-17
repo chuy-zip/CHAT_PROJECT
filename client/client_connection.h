@@ -2,6 +2,6 @@
 #ifndef CLIENT_CONNECTION_H
 #define CLIENT_CONNECTION_H
 
-int client_connection(int server_port, char server_ip_address[8]); // Declaración
+int client_connection(int server_port, const char server_ip_address[8]); // Declaración
 
 #endif // CLIENT_REGISTER_H

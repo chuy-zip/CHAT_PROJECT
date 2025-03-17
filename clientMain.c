@@ -8,6 +8,39 @@
 #include <ctype.h>  // isdigit()
 #include <cjson/cJSON.h>
 
+#include "client/client_connection.h"
+#include "client/client_register.h"
+#include "client/client_list.h"
+
+void print_users(cJSON *users_list) {
+    char *respuesta = users_list->valuestring;
+
+    cJSON *respuesta_parseada = cJSON_Parse(respuesta);
+
+    cJSON *cliente;
+    cJSON_ArrayForEach(cliente, respuesta_parseada) {
+        if (cJSON_IsString(cliente)) {
+            cJSON *cliente_json = cJSON_Parse(cliente->valuestring);
+            if (cliente_json != NULL) {
+                cJSON *usuario = cJSON_GetObjectItem(cliente_json, "usuario");
+                cJSON *ip = cJSON_GetObjectItem(cliente_json, "direccionIP");
+                cJSON *socket = cJSON_GetObjectItem(cliente_json, "socket");
+                cJSON *estado = cJSON_GetObjectItem(cliente_json, "estado");
+
+                if (usuario && ip && socket && estado) {
+                    printf("\nUsuario: %s\n", usuario->valuestring);
+                    printf("IP: %s\n", ip->valuestring);
+                    printf("Socket: %s\n", socket->valuestring);
+                    printf("Estado: %s\n", estado->valuestring);
+                    printf("----------------------\n");
+                }
+
+                cJSON_Delete(cliente_json);
+            }
+        }
+    }    
+}
+
 // checking if string is number
 bool is_number(const char *s) {
     for (int i = 0; s[i] != '\0'; i++) {
@@ -94,37 +127,9 @@ int main(int argc, char const* argv[]) {
         return 1; 
     }
 
-    // port to number
-    int port = atoi(argv[3]);
+    int socket = client_connection(50213, argv[2]);
 
-    // user data
-    printf("client: %s\n", argv[0]);
-    printf("username: %s\n", argv[1]);
-    printf("Connecting to server in IP: %s, port: %d...\n", argv[2], port);
-
-    int status, client_fd;
-    struct sockaddr_in serv_addr;
-    
-
-    // client socket
-    if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        printf("\nSocket creation error \n");
-        return -1;
-    }
-
-    // server address
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(port);  
-
-    // ip text to binary
-    if (inet_pton(AF_INET, argv[2], &serv_addr.sin_addr) <= 0) {
-        printf("\nInvalid address/ Address not supported \n");
-        return -1;
-    }
-
-    // connect
-    if ((status = connect(client_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr))) < 0) {
-        printf("\nConnection Failed \n");
+    if (socket < 0) {
         return -1;
     }
     
@@ -132,6 +137,12 @@ int main(int argc, char const* argv[]) {
     printf("+-----------------------------------------------------------+\n");
     printf("|                  WELCOME TO CHAT SERVER                   |\n");
     printf("+-----------------------------------------------------------+\n");
+    
+    // REGISTRAR A UN MEN    
+    if(client_register(argv[1], socket) == NULL) {
+        return -1;
+    }
+
     while(stay){
         int chatSelection;
         printf("\nSelect an action \n");
@@ -154,7 +165,7 @@ int main(int argc, char const* argv[]) {
                 printf("|                        GLOBAL CHAT                        |\n");
                 printf("+-----------------------------------------------------------+\n");
   
-                handle_broadcast_global(client_fd, argv[1]);
+                handle_broadcast_global(socket, argv[1]);
                 
                 break;
             case 2:
@@ -175,7 +186,13 @@ int main(int argc, char const* argv[]) {
                 printf("+-----------------------------------------------------------+\n");
                 printf("|                 LIST ALL USERS CONNECTED                  |\n");
                 printf("+-----------------------------------------------------------+\n");
-                // self explanatory
+                cJSON *main_list = cJSON_Duplicate(client_list(socket), 1);
+                
+                if (main_list == NULL) {
+                    return -1;
+                }
+
+                print_users(cJSON_GetObjectItem(main_list, "respuesta"));
                 break;
             case 5:
                 printf("+-----------------------------------------------------------+\n");
@@ -272,13 +289,13 @@ int main(int argc, char const* argv[]) {
                 printf("|                          LOG OUT                          |\n");
                 printf("+-----------------------------------------------------------+\n");
                 printf("Bye\n");
-                handle_exit(client_fd, argv[1]);
+                handle_exit(socket, argv[1]);
                 stay = false;
                 break;
             default:
                 printf("Not an option :/\n");
         }
     }
-    close(client_fd);
+    close(socket);
     return 0;
 }

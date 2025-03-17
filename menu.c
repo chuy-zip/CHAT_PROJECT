@@ -3,60 +3,15 @@
 #include <stdbool.h>
 #include <cjson/cJSON.h>
 
-#include "client/client_connection.h"
-#include "client/client_register.h"
-#include "client/client_list.h"
-
-void print_users(cJSON *users_list) {
-    char *respuesta = users_list->valuestring;
-
-    cJSON *respuesta_parseada = cJSON_Parse(respuesta);
-
-    cJSON *cliente;
-    cJSON_ArrayForEach(cliente, respuesta_parseada) {
-        if (cJSON_IsString(cliente)) {
-            cJSON *cliente_json = cJSON_Parse(cliente->valuestring);
-            if (cliente_json != NULL) {
-                cJSON *usuario = cJSON_GetObjectItem(cliente_json, "usuario");
-                cJSON *ip = cJSON_GetObjectItem(cliente_json, "direccionIP");
-                cJSON *socket = cJSON_GetObjectItem(cliente_json, "socket");
-                cJSON *estado = cJSON_GetObjectItem(cliente_json, "estado");
-
-                if (usuario && ip && socket && estado) {
-                    printf("\nUsuario: %s\n", usuario->valuestring);
-                    printf("IP: %s\n", ip->valuestring);
-                    printf("Socket: %s\n", socket->valuestring);
-                    printf("Estado: %s\n", estado->valuestring);
-                    printf("----------------------\n");
-                }
-
-                cJSON_Delete(cliente_json);
-            }
-        }
-    }    
-}
-
 int main()
 {
     bool stay = true;
-    int socket = client_connection(50213, "0.0.0.0");
 
-    if (socket < 0) {
-        return -1;
-    }
 
     printf("+-----------------------------------------------------------+\n");
     printf("|                  WELCOME TO CHAT SERVER                   |\n");
     printf("+-----------------------------------------------------------+\n");
 
-    // REGISTRAR A UN MEN
-    char client_name[20];
-    printf("Enter your name: ");
-    scanf("%s", client_name);
-    
-    if(client_register(client_name, socket) == NULL) {
-        return -1;
-    }
 
     while(stay){
         int chatSelection;
@@ -98,14 +53,6 @@ int main()
                 printf("+-----------------------------------------------------------+\n");
                 printf("|                 LIST ALL USERS CONNECTED                  |\n");
                 printf("+-----------------------------------------------------------+\n");
-                
-                cJSON *main_list = cJSON_Duplicate(client_list(socket), 1);
-                
-                if (main_list == NULL) {
-                    return -1;
-                }
-
-                print_users(cJSON_GetObjectItem(main_list, "respuesta"));
 
                 break;
             case 5:

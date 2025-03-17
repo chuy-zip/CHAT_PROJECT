@@ -24,7 +24,7 @@
 * @return -1: Error.
 * @note Se debe cerrar el socket con la función "close()" cuando ya no se necesite.
 */
-int client_connection(int server_port, char server_ip_address[8])
+int client_connection(int server_port, const char server_ip_address[8])
 {   
     int client_socket;
     struct sockaddr_in server_address;

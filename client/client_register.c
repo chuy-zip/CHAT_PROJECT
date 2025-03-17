@@ -18,7 +18,7 @@
 * @return cJSON*: Objeto JSON con los datos del cliente.
 * @return NULL: Error.
 */
-cJSON* client_register(char client_name[], int client_socket)
+cJSON* client_register(const char client_name[], int client_socket)
 {
     char server_response[BUFFER_SIZE];
     
