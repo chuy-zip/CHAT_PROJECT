@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <cjson/cJSON.h>
 
+#include "client_info.h"
+
 #define BUFFER_SIZE 1024
 
 /*
@@ -47,7 +49,6 @@ cJSON* client_info(char client_name[], int client_socket)
     
     // Obteniendo respuesta del server
     cJSON *server = cJSON_Parse(server_response);
-    printf("\nServer response: %s\n", cJSON_Print(server));
 
     // Verificando que no esté vacía
     if (server == NULL) {
@@ -73,11 +74,8 @@ cJSON* client_info(char client_name[], int client_socket)
         return NULL;
     }
 
-    cJSON_Delete(server);
-    free(client_json);
     
     // Éxito
-    printf("Usuario encontrado: %s", cJSON_Print(respuesta));
 
-    return client;
+    return server;
 }
