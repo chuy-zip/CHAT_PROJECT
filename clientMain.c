@@ -7,11 +7,15 @@
 #include <stdbool.h>
 #include <ctype.h>  // isdigit()
 #include <cjson/cJSON.h>
+#include <pthread.h>
 
 #include "client/client_connection.h"
 #include "client/client_register.h"
 #include "client/client_list.h"
 #include "client/client_info.h"
+
+
+#define BUFFER_SIZE_BROAD 1024
 
 void print_users(cJSON *users_list) {
     char *respuesta = users_list->valuestring;
@@ -109,10 +113,41 @@ void handle_exit(int client_fd, const char *username) {
     free(exit_json);
 }
 
+typedef struct {
+    int client_fd;
+} thread_data_t;
+
+void* receive_messages(void* arg) {
+    thread_data_t* data = (thread_data_t*)arg;
+    int client_fd = data->client_fd;
+    char buffer[BUFFER_SIZE_BROAD] = {0};
+
+    while (1) {
+        int valread = read(client_fd, buffer, BUFFER_SIZE_BROAD - 1);
+        if (valread <= 0) {
+            printf("Disconnected.\n");
+            break;
+        }
+
+        buffer[valread] = '\0';
+        printf("\nReceived: %s\n", buffer);  // show received
+        printf("Message: ");  // ask message
+        fflush(stdout);  // show 
+    }
+
+    return NULL;
+}
 
 void handle_broadcast_global(int client_fd, const char *username) {
     char buffer[1024] = {0};
     int valread;
+    pthread_t receive_thread;
+    thread_data_t thread_data = {client_fd};
+    
+    if (pthread_create(&receive_thread, NULL, receive_messages, (void*)&thread_data) != 0) {
+        perror("Error creating thread");
+        return;
+    }
     
     printf("Now connected. write meissages or exit to end connection.\n");
                 
@@ -140,17 +175,9 @@ void handle_broadcast_global(int client_fd, const char *username) {
         
         //send(client_fd, buffer, strlen(buffer), 0);
 
-        valread = read(client_fd, buffer, 1024 - 1);
-
-        if (valread <= 0) {
-            printf("Disconnected.\n");
-            break;
-        }
-        
-        buffer[valread] = '\0';
-        printf("Server responded with: %s\n", buffer);
-        memset(buffer, 0, sizeof(buffer));
     }
+    pthread_cancel(receive_thread);  // cancel thread
+    pthread_join(receive_thread, NULL);  // but gracefully, waiting for it to finish
 }
 
 void request_user_list(int client_fd) {
