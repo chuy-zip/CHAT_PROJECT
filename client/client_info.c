@@ -74,6 +74,8 @@ cJSON* client_info(char client_name[], int client_socket)
         return NULL;
     }
 
+    cJSON_Delete(client);
+    free(client_json);
     
     // Éxito
 

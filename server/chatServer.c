@@ -71,9 +71,7 @@ void* handle_client(void* arg) {
         }
         
         cJSON_AddStringToObject(client, "direccionIP", client_ip);
-        char str[20];
-        sprintf(str, "%d", client_socket);
-        cJSON_AddStringToObject(client, "socket", str);
+        cJSON_AddNumberToObject(client, "socket", client_socket);
         
         // printing json
         char *json_str = cJSON_Print(client);
