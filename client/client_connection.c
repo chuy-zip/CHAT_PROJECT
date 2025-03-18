@@ -11,7 +11,6 @@
 #include "client_list.h"
 
 #include "client_register.h"
-#include "client_info.c"
 #include "client_state.c"
 #include "client_send.c"
 #include "client_receive.c"
