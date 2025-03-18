@@ -28,9 +28,9 @@ int info_response(int socket, char buffer[], int buffer_size, bool user_flag, cJ
         cJSON_AddStringToObject(response, "razon", "Datos de usuario inválidos");
         send(socket, cJSON_Print(response), strlen(cJSON_Print(response)), 0);
         printf("Message: %s\n sended to client.\n", cJSON_Print(response));
+        printf("Incorrect user name\n");
         cJSON_Delete(client);
         cJSON_Delete(response);
-        close(socket);
         return -1;
     
     } else if (user_flag == false) {
@@ -41,7 +41,7 @@ int info_response(int socket, char buffer[], int buffer_size, bool user_flag, cJ
         printf("Message: %s\n sended to client.\n", cJSON_Print(response));
         cJSON_Delete(client);
         cJSON_Delete(response);
-        close(socket);
+        printf("Incorrect user name\n");
         return -1;
     }
 

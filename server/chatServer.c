@@ -137,7 +137,7 @@ void* handle_client(void* arg) {
                 }
 
                 if(info_response(client_socket, buffer, BUFFER_SIZE, user_flag, user_to_return) < 0 || user_flag == false) {
-                    printf("Unable to find user");   
+                    printf("Unable to find user");
                 
                 } else {
                     printf("User found");

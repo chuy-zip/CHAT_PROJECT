@@ -34,7 +34,6 @@ cJSON* client_info(char client_name[], int client_socket)
         perror("Unable to send user name");
         free(client_json);
         cJSON_Delete(client);
-        close(client_socket);
         return NULL;
     }
 
@@ -43,7 +42,6 @@ cJSON* client_info(char client_name[], int client_socket)
         perror("Error while receiving response from server");
         free(client_json);
         cJSON_Delete(client);
-        close(client_socket);
         return NULL;
     }
     
@@ -56,7 +54,6 @@ cJSON* client_info(char client_name[], int client_socket)
         free(client_json);
         cJSON_Delete(client);
         cJSON_Delete(server);
-        close(client_socket);
         return NULL;
     }
 
@@ -68,7 +65,6 @@ cJSON* client_info(char client_name[], int client_socket)
     if (respuesta != NULL && strcmp(respuesta->valuestring, "ERROR") == 0) {
         printf("ERROR: %s", cJSON_Print(razon));
         cJSON_Delete(server);
-        close(client_socket);
         free(client_json);
         cJSON_Delete(client);
         return NULL;
