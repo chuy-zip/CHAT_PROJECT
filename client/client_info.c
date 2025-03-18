@@ -73,11 +73,11 @@ cJSON* client_info(char client_name[], int client_socket)
         return NULL;
     }
 
-    cJSON_Delete(server);
+    cJSON_Delete(client);
     free(client_json);
     
     // Éxito
-    printf("Usuario encontrado: %s", cJSON_Print(respuesta));
+    printf("Usuario encontrado: %s", cJSON_Print(server));
 
-    return client;
+    return server;
 }
