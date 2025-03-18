@@ -166,6 +166,20 @@ void* handle_client(void* arg) {
                     cJSON_ReplaceItemInObjectCaseSensitive(client_list->array[user_to_change_index], "estado", cJSON_CreateString(state_to_change->valuestring));
                 }
         
+            }  else if (tipo != NULL && strcmp(tipo->valuestring, "LISTA") == 0) {
+                cJSON *users_list = cJSON_CreateObject();
+                char str[20];
+
+                for (size_t i = 0; i < client_list->used; i++) {
+                    sprintf(str, "%ld", i);
+                    cJSON_AddStringToObject(users_list, str, cJSON_Print(client_list->array[i]));
+                }
+
+                if (list_response(client_socket, users_list) < 0) {
+                    printf("Unable to get users list");
+                } else {
+                    printf("Success");
+                }
             }
         
         cJSON *accion = cJSON_GetObjectItemCaseSensitive(client, "accion");
@@ -200,23 +214,6 @@ void* handle_client(void* arg) {
                     break;
                 }
             }
-        }
-        else if (accion != NULL && strcmp(accion->valuestring, "LISTA") == 0) {
-            cJSON *users_list = cJSON_CreateObject();
-            char str[20];
-            for (size_t i = 0; i < client_list->used; i++) {
-                sprintf(str, "%ld", i);
-                cJSON_AddStringToObject(users_list, str, cJSON_Print(client_list->array[i]));
-                
-            }
-
-            if(list_response(client_socket, users_list) < 0) {
-                printf("Unable to get users list");   
-            
-            } else {
-                printf("Success");
-            }
-
         }
          
 
