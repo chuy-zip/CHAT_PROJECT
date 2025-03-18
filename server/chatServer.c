@@ -191,6 +191,28 @@ void* handle_client(void* arg) {
             if (nombre_emisor != NULL && mensaje != NULL) {
                 printf("User: %s just send the message: %s\n", nombre_emisor->valuestring, mensaje->valuestring);
                 send(client_socket, welcome_message, strlen(welcome_message), 0);
+                
+                cJSON *response = cJSON_CreateObject();
+                cJSON_AddStringToObject(response, "accion", "BROADCAST");
+                cJSON_AddStringToObject(response, "nombre_emisor", nombre_emisor->valuestring);
+                cJSON_AddStringToObject(response, "mensaje", mensaje->valuestring);
+
+                // Convertir el JSON a una cadena
+                char *response_str = cJSON_Print(response);
+                printf("Broadcasting message: %s\n", response_str);
+                
+                for (size_t i = 0; i < client_list->used; i++){
+                    cJSON *client_json = client_list->array[i];
+                    cJSON *client_socket_json = cJSON_GetObjectItemCaseSensitive(client_json, "socket");
+                    
+                    if (client_socket_json != NULL) {
+                        int client_socket = client_socket_json->valueint;
+                        send(client_socket, response_str, strlen(response_str), 0);
+                    }
+                }
+                
+                cJSON_Delete(response);
+                free(response_str);
             }
 
         } else if (accion != NULL && strcmp(accion->valuestring, "DM") == 0) {
