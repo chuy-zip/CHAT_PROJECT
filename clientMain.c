@@ -124,20 +124,40 @@ void* receive_messages(void* arg) {
 
     while (1) {
         int valread = read(client_fd, buffer, BUFFER_SIZE_BROAD - 1);
+        
         if (valread <= 0) {
             printf("Disconnected.\n");
             break;
         }
-
+        
         buffer[valread] = '\0';
-        printf("\nReceived: %s\n", buffer);  // show received
-        printf("Message: ");  // ask message
+        
+        cJSON *message_json = cJSON_Parse(buffer);
+        
+        if (message_json == NULL) {
+            printf("Error al parsear el JSON.\n");
+            return NULL;
+        }
+        
+        cJSON *accion = cJSON_GetObjectItemCaseSensitive(message_json, "accion");
+        cJSON *nombre_emisor = cJSON_GetObjectItemCaseSensitive(message_json, "nombre_emisor");
+        cJSON *mensaje = cJSON_GetObjectItemCaseSensitive(message_json, "mensaje");
+
+        
+        if (accion != NULL && nombre_emisor != NULL && mensaje != NULL && strcmp(accion->valuestring, "BROADCAST") == 0) {
+            printf("\n%s: %s\n", nombre_emisor->valuestring, mensaje->valuestring); // show message
+        } else {
+            printf("Error: JSON incompleto o mal formado.\n");
+        }
+        
+        cJSON_Delete(message_json);
+
+        printf(": ");  // ask message
         fflush(stdout);  // show 
     }
 
     return NULL;
 }
-
 void handle_broadcast_global(int client_fd, const char *username) {
     char buffer[1024] = {0};
     int valread;
@@ -151,8 +171,8 @@ void handle_broadcast_global(int client_fd, const char *username) {
     
     printf("Now connected. write meissages or exit to end connection.\n");
                 
+    printf("Message: ");
     while (1) {
-        printf("Message: ");
         fgets(buffer, 1024, stdin);
         buffer[strcspn(buffer, "\n")] = 0;
         
@@ -169,7 +189,7 @@ void handle_broadcast_global(int client_fd, const char *username) {
         cJSON_Delete(root);
 
         // sending data for broadcast
-        printf("Sending JSON: %s\n", broadcast_json);
+        // printf("Sending JSON: %s\n", broadcast_json);
         send(client_fd, broadcast_json, strlen(broadcast_json), 0);
         free(broadcast_json);
         

@@ -190,7 +190,7 @@ void* handle_client(void* arg) {
             cJSON *mensaje = cJSON_GetObjectItemCaseSensitive(client, "mensaje");
             if (nombre_emisor != NULL && mensaje != NULL) {
                 printf("User: %s just send the message: %s\n", nombre_emisor->valuestring, mensaje->valuestring);
-                send(client_socket, welcome_message, strlen(welcome_message), 0);
+                //send(client_socket, welcome_message, strlen(welcome_message), 0);
                 
                 cJSON *response = cJSON_CreateObject();
                 cJSON_AddStringToObject(response, "accion", "BROADCAST");
