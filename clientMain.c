@@ -79,7 +79,7 @@ void print_user_info(cJSON *user_info) {
     printf("\n----------------------------\n");
     printf("%s's Data\n", usuario->valuestring);
     printf(" - IP Address: %s\n", ip->valuestring);
-    printf(" - Socket: %s\n", socket->valuestring);
+    printf(" - Socket: %d\n", socket->valueint);
     printf(" - Status: %s\n", estado->valuestring);
     printf("----------------------------\n");
 
