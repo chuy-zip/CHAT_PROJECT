@@ -27,3 +27,29 @@ void free_array(Array *a) {
     a->array = NULL;
     a->used = a->size = 0;
 }
+
+void remove_array(Array *a, size_t index) {
+    if (index >= a->used) {
+        fprintf(stderr, "Error: Índice fuera de rango.\n");
+        return;
+    }
+
+    cJSON_Delete(a->array[index]);
+
+    for (size_t i = index; i < a->used - 1; i++) {
+        a->array[i] = a->array[i + 1];
+    }
+
+    a->used--;
+}
+
+void remove_client(Array* client_list, int client_socket) {
+    for (size_t i = 0; i < client_list->used; i++) {
+        cJSON *client = client_list->array[i];
+        cJSON *socket_json = cJSON_GetObjectItem(client, "socket");
+        if (socket_json != NULL && socket_json->valueint == client_socket) {
+            remove_array(client_list, i);  
+            break;
+        }
+    }
+}

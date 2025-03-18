@@ -51,6 +51,7 @@ void* handle_client(void* arg) {
         int valread = read(client_socket, buffer, BUFFER_SIZE);
         if (valread <= 0) {
             printf("\nClient disconnected.\n");
+            remove_client(client_list, client_socket);
             break;
         }
         
@@ -117,7 +118,7 @@ void* handle_client(void* arg) {
                 if (usuario != NULL) {
                     printf("User: %s requested to exit.\n", usuario->valuestring);
                 }
-                
+                remove_client(client_list, client_socket);
                 cJSON_Delete(client); 
                 break;
         
@@ -204,7 +205,7 @@ void* handle_client(void* arg) {
             cJSON *users_list = cJSON_CreateObject();
             char str[20];
             for (size_t i = 0; i < client_list->used; i++) {
-                sprintf(str, "%d", i);
+                sprintf(str, "%ld", i);
                 cJSON_AddStringToObject(users_list, str, cJSON_Print(client_list->array[i]));
                 
             }
