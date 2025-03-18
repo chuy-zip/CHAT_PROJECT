@@ -18,22 +18,27 @@ void print_users(cJSON *users_list) {
     cJSON *respuesta_parseada = cJSON_Parse(respuesta);
 
     cJSON *cliente;
+    int i = 0;
     cJSON_ArrayForEach(cliente, respuesta_parseada) {
         if (cJSON_IsString(cliente)) {
             cJSON *cliente_json = cJSON_Parse(cliente->valuestring);
             if (cliente_json != NULL) {
+                
+                cJSON_AddNumberToObject(cliente_json, "id", i);
+                cJSON *id = cJSON_GetObjectItem(cliente_json, "id");
                 cJSON *usuario = cJSON_GetObjectItem(cliente_json, "usuario");
                 cJSON *ip = cJSON_GetObjectItem(cliente_json, "direccionIP");
                 cJSON *socket = cJSON_GetObjectItem(cliente_json, "socket");
                 cJSON *estado = cJSON_GetObjectItem(cliente_json, "estado");
-
-                if (usuario && ip && socket && estado) {
-                    printf("\nUsuario: %s\n", usuario->valuestring);
-                    printf("IP: %s\n", ip->valuestring);
-                    printf("Socket: %s\n", socket->valuestring);
-                    printf("Estado: %s\n", estado->valuestring);
+                
+                if (id && usuario && ip && socket && estado) {
+                    printf("\n%d:", id->valueint);
+                    printf("User name: %s\n", usuario->valuestring);
+                    printf("   Status: %s\n", estado->valuestring);
                     printf("----------------------\n");
                 }
+
+                i = i + 1;
 
                 cJSON_Delete(cliente_json);
             }
