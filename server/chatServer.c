@@ -214,25 +214,35 @@ void* handle_client(void* arg) {
             }
 
         } else if (accion != NULL && strcmp(accion->valuestring, "DM") == 0) {
-            // Enviar mensaje directo
+            cJSON *nombre_emisor = cJSON_GetObjectItemCaseSensitive(client, "nombre_emisor");
             cJSON *nombre_destinatario = cJSON_GetObjectItemCaseSensitive(client, "nombre_destinatario");
+            cJSON *mensaje = cJSON_GetObjectItemCaseSensitive(client, "mensaje");
+            if (nombre_emisor != NULL && mensaje != NULL) {
+                printf("User: %s just send the message: %s to user: %s\n", nombre_emisor->valuestring, mensaje->valuestring, nombre_destinatario->valuestring);
+                
+                cJSON *response = cJSON_CreateObject();
+                cJSON_AddStringToObject(response, "accion", "DM");
+                cJSON_AddStringToObject(response, "nombre_emisor", nombre_emisor->valuestring);
+                cJSON_AddStringToObject(response, "nombre_destinatario", nombre_destinatario->valuestring);
+                cJSON_AddStringToObject(response, "mensaje", mensaje->valuestring);
 
-            if (send_response(client_socket, buffer) < 0) {
-                printf("Unable to send message");
-            
-            } else {
-                printf("Message sent");
-            }
-
-            for (size_t i = 0; i < client_list->used; i++) {
-                cJSON *client_list_name = cJSON_GetObjectItem(client_list->array[i], "usuario");
-
-                if (strcmp(nombre_destinatario->valuestring, client_list_name->valuestring) == 0) {
-                    if (receive_response(atoi(cJSON_GetObjectItemCaseSensitive(client_list->array[i], "socket")->valuestring), buffer) == 0) {
-                        printf("Message sended");
-                    }      
-                    break;
+                // Convertir el JSON a una cadena
+                char *response_str = cJSON_Print(response);
+                printf("Broadcasting message: %s\n", response_str);
+                
+                for (size_t i = 0; i < client_list->used; i++){
+                    cJSON *client_json = client_list->array[i];
+                    cJSON *client_socket_json = cJSON_GetObjectItemCaseSensitive(client_json, "socket");
+                    cJSON *client_user_json = cJSON_GetObjectItemCaseSensitive(client_json, "usuario");
+                    
+                    if (strcmp(client_user_json->valuestring, nombre_destinatario->valuestring) == 0) {
+                        int client_socket = client_socket_json->valueint;
+                        send(client_socket, response_str, strlen(response_str), 0);
+                    }
                 }
+                
+                cJSON_Delete(response);
+                free(response_str);
             }
         }
          

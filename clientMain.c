@@ -141,13 +141,17 @@ void* receive_messages(void* arg) {
         
         cJSON *accion = cJSON_GetObjectItemCaseSensitive(message_json, "accion");
         cJSON *nombre_emisor = cJSON_GetObjectItemCaseSensitive(message_json, "nombre_emisor");
+        cJSON *nombre_destinatario = cJSON_GetObjectItemCaseSensitive(message_json, "nombre_destinatario");
         cJSON *mensaje = cJSON_GetObjectItemCaseSensitive(message_json, "mensaje");
 
         
         if (accion != NULL && nombre_emisor != NULL && mensaje != NULL && strcmp(accion->valuestring, "BROADCAST") == 0) {
             printf("\n%s: %s\n", nombre_emisor->valuestring, mensaje->valuestring); // show message
+
+        } else if (accion != NULL && nombre_emisor != NULL && nombre_destinatario != NULL && mensaje != NULL && strcmp(accion->valuestring, "DM") == 0) {
+            printf("\n%s: %s\n", nombre_emisor->valuestring, mensaje->valuestring); // show message
         } else {
-            printf("Error: JSON incompleto o mal formado.\n");
+            printf("Error: Bad JSON\n");
         }
         
         cJSON_Delete(message_json);
@@ -158,6 +162,47 @@ void* receive_messages(void* arg) {
 
     return NULL;
 }
+
+void handle_dm(int client_fd, const char *username, const char *to_username) {
+    char buffer[1024] = {0};
+    int valread;
+    pthread_t receive_thread;
+    thread_data_t thread_data = {client_fd};
+    
+    if (pthread_create(&receive_thread, NULL, receive_messages, (void*)&thread_data) != 0) {
+        perror("Error creating thread");
+        return;
+    }
+    printf("Now connected with %s. write meissages or exit to end connection.\n", to_username);
+                
+    printf("Message: ");
+    while (1) {
+        fgets(buffer, 1024, stdin);
+        buffer[strcspn(buffer, "\n")] = 0;
+        
+        if (strcmp(buffer, "exit") == 0) {
+          printf("Closing global chat.\n");
+          break;
+        }
+        
+        cJSON *root = cJSON_CreateObject();
+        cJSON_AddStringToObject(root, "accion", "DM");
+        cJSON_AddStringToObject(root, "nombre_emisor", username);
+        cJSON_AddStringToObject(root, "nombre_destinatario", to_username);
+        cJSON_AddStringToObject(root, "mensaje", buffer);
+        char *broadcast_json = cJSON_Print(root);
+        cJSON_Delete(root);
+
+        // sending data for broadcast
+        // printf("Sending JSON: %s\n", broadcast_json);
+        send(client_fd, broadcast_json, strlen(broadcast_json), 0);
+        free(broadcast_json);
+    }
+
+    pthread_cancel(receive_thread);  // cancel thread
+    pthread_join(receive_thread, NULL);  // but gracefully, waiting for it to finish
+}
+
 void handle_broadcast_global(int client_fd, const char *username) {
     char buffer[1024] = {0};
     int valread;
@@ -303,9 +348,8 @@ int main(int argc, char const* argv[]) {
                 printf("+-----------------------------------------------------------+\n");
                 printf("|                       PRIVATE CHAT                        |\n");
                 printf("+-----------------------------------------------------------+\n");
-                // list all users available to chat
-                // select one user somehow
-                // send and receive chats
+
+                handle_dm(socket, argv[1], "Jorge");
                 break;
             case 3:
                 printf("+-----------------------------------------------------------+\n");
