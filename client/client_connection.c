@@ -12,8 +12,6 @@
 
 #include "client_register.h"
 #include "client_state.c"
-#include "client_send.c"
-#include "client_receive.c"
 
 /*
 * @brief Establece la conexión con el servidor.

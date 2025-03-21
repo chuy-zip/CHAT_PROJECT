@@ -7,9 +7,7 @@
 #include <ctype.h>  // isdigit()
 #include <pthread.h>
 #include <cjson/cJSON.h>
-#include <cjson/cJSON.h>
 #include <sys/socket.h>
-
 #include "register_response.c"
 #include "info_response.c"
 #include "state_response.c"
@@ -137,7 +135,7 @@ void* handle_client(void* arg) {
                 }
 
                 if(info_response(client_socket, buffer, BUFFER_SIZE, user_flag, user_to_return) < 0 || user_flag == false) {
-                    printf("Unable to find user");
+                    printf("Unable to find user");   
                 
                 } else {
                     printf("User found");
