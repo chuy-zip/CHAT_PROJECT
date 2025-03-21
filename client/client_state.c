@@ -10,19 +10,21 @@
 #define BUFFER_SIZE 1024
 
 /*
-* @brief Obtiene la información de todos los usuarios conectados.
+* @brief Obtiene la información de un usuario conectado.
+* @param char[10]: client_name: Nombre del cliente a buscar.
 * @param int: client_socket: Socket del cliente.
-* @return cJSON*: Objeto JSON con los datos de los clientes.
-* @note El JSON de respuesta tiene el siguiente formato: {"respuesta": {"0": {"nombre": "example", "direccionIP": "0.0.0.0.", ...}, "1": {"nombre": "example2", ...}}}
+* @return cJSON*: Objeto JSON con los datos del cliente.
 * @return NULL: Error.
 */
-cJSON* client_list(int client_socket)
+cJSON* client_state(char client_name[], char client_state[], int client_socket)
 {
     char server_response[BUFFER_SIZE];
     
     // Añadiendo datos al objeto cliente
     cJSON *client = cJSON_CreateObject();
-    cJSON_AddStringToObject(client, "tipo", "LISTA");
+    cJSON_AddStringToObject(client, "tipo", "ESTADO");
+    cJSON_AddStringToObject(client, "estado", client_state);
+    cJSON_AddStringToObject(client, "usuario", client_name);
 
     char *client_json = cJSON_Print(client);
 
@@ -62,7 +64,7 @@ cJSON* client_list(int client_socket)
     cJSON *respuesta = cJSON_GetObjectItem(server, "respuesta");
     cJSON *razon = cJSON_GetObjectItem(server, "razon");
 
-    // Manejando error "Usuario repetido"
+    // Manejando error
     if (respuesta != NULL && strcmp(respuesta->valuestring, "ERROR") == 0) {
         printf("ERROR: %s", cJSON_Print(razon));
         cJSON_Delete(server);
@@ -76,7 +78,7 @@ cJSON* client_list(int client_socket)
     free(client_json);
     
     // Éxito
-    printf("Lista de usuarios conectados: %s", cJSON_Print(respuesta));
+    printf("Profile changed successfully");
 
     return client;
 }

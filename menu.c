@@ -1,13 +1,18 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <cjson/cJSON.h>
 
 int main()
 {
     bool stay = true;
+
+
     printf("+-----------------------------------------------------------+\n");
     printf("|                  WELCOME TO CHAT SERVER                   |\n");
     printf("+-----------------------------------------------------------+\n");
+
+
     while(stay){
         int chatSelection;
         printf("\nSelect an action \n");
@@ -48,7 +53,7 @@ int main()
                 printf("+-----------------------------------------------------------+\n");
                 printf("|                 LIST ALL USERS CONNECTED                  |\n");
                 printf("+-----------------------------------------------------------+\n");
-                // self explanatory
+
                 break;
             case 5:
                 printf("+-----------------------------------------------------------+\n");
@@ -149,6 +154,7 @@ int main()
                 break;
             default:
                 printf("Not an option :/\n");
+                break;
         }
     }
     

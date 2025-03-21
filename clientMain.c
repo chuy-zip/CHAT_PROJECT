@@ -7,6 +7,87 @@
 #include <stdbool.h>
 #include <ctype.h>  // isdigit()
 #include <cjson/cJSON.h>
+#include <pthread.h>
+
+#include "client/client_connection.h"
+#include "client/client_register.h"
+#include "client/client_list.h"
+#include "client/client_info.h"
+
+
+#define BUFFER_SIZE_BROAD 1024
+
+void print_users(cJSON *users_list) {
+    char *respuesta = users_list->valuestring;
+
+    cJSON *respuesta_parseada = cJSON_Parse(respuesta);
+
+    cJSON *cliente;
+    int i = 0;
+    cJSON_ArrayForEach(cliente, respuesta_parseada) {
+        if (cJSON_IsString(cliente)) {
+            cJSON *cliente_json = cJSON_Parse(cliente->valuestring);
+            if (cliente_json != NULL) {
+                
+                cJSON_AddNumberToObject(cliente_json, "id", i);
+                cJSON *id = cJSON_GetObjectItem(cliente_json, "id");
+                cJSON *usuario = cJSON_GetObjectItem(cliente_json, "usuario");
+                cJSON *ip = cJSON_GetObjectItem(cliente_json, "direccionIP");
+                cJSON *socket = cJSON_GetObjectItem(cliente_json, "socket");
+                cJSON *estado = cJSON_GetObjectItem(cliente_json, "estado");
+                
+                if (id && usuario && ip && socket && estado) {
+                    printf("\n%d - ", id->valueint);
+                    printf("User name: %s\n", usuario->valuestring);
+                    printf("     Status: %s\n", estado->valuestring);
+                    printf("\n----------------------------\n");
+                }
+
+                i = i + 1;
+
+                cJSON_Delete(cliente_json);
+            }
+        }
+    }    
+}
+
+void print_user_info(cJSON *user_info) {
+    if (user_info == NULL) {
+        printf("Error: No user info available.\n");
+        return;
+    }
+
+    char *respuesta = user_info->valuestring;
+    cJSON *parsed_user = cJSON_Parse(respuesta);
+
+    if (parsed_user == NULL) {
+        printf("Error parsing user information.\n");
+        return;
+    }
+
+    cJSON *usuario = cJSON_GetObjectItem(parsed_user, "usuario");
+    cJSON *ip = cJSON_GetObjectItem(parsed_user, "direccionIP");
+    cJSON *socket = cJSON_GetObjectItem(parsed_user, "socket");
+    cJSON *estado = cJSON_GetObjectItem(parsed_user, "estado");
+
+    if (!usuario || !ip || !socket || !estado) {
+        printf("Error: Missing user information.\n");
+        cJSON_Delete(parsed_user);
+        return;
+    }
+
+    printf("\n----------------------------\n");
+    printf("%s's Data\n", usuario->valuestring);
+    printf(" - IP Address: %s\n", ip->valuestring);
+    printf(" - Socket: %d\n", socket->valueint);
+    printf(" - Status: %s\n", estado->valuestring);
+    printf("----------------------------\n");
+
+    // Liberar memoria del JSON parseado
+    cJSON_Delete(parsed_user);
+}
+
+
 
 // checking if string is number
 bool is_number(const char *s) {
@@ -32,15 +113,66 @@ void handle_exit(int client_fd, const char *username) {
     free(exit_json);
 }
 
+typedef struct {
+    int client_fd;
+} thread_data_t;
 
+void* receive_messages(void* arg) {
+    thread_data_t* data = (thread_data_t*)arg;
+    int client_fd = data->client_fd;
+    char buffer[BUFFER_SIZE_BROAD] = {0};
+
+    while (1) {
+        int valread = read(client_fd, buffer, BUFFER_SIZE_BROAD - 1);
+        
+        if (valread <= 0) {
+            printf("Disconnected.\n");
+            break;
+        }
+        
+        buffer[valread] = '\0';
+        
+        cJSON *message_json = cJSON_Parse(buffer);
+        
+        if (message_json == NULL) {
+            printf("Error al parsear el JSON.\n");
+            return NULL;
+        }
+        
+        cJSON *accion = cJSON_GetObjectItemCaseSensitive(message_json, "accion");
+        cJSON *nombre_emisor = cJSON_GetObjectItemCaseSensitive(message_json, "nombre_emisor");
+        cJSON *mensaje = cJSON_GetObjectItemCaseSensitive(message_json, "mensaje");
+
+        
+        if (accion != NULL && nombre_emisor != NULL && mensaje != NULL && strcmp(accion->valuestring, "BROADCAST") == 0) {
+            printf("\n%s: %s\n", nombre_emisor->valuestring, mensaje->valuestring); // show message
+        } else {
+            printf("Error: JSON incompleto o mal formado.\n");
+        }
+        
+        cJSON_Delete(message_json);
+
+        printf(": ");  // ask message
+        fflush(stdout);  // show 
+    }
+
+    return NULL;
+}
 void handle_broadcast_global(int client_fd, const char *username) {
     char buffer[1024] = {0};
     int valread;
+    pthread_t receive_thread;
+    thread_data_t thread_data = {client_fd};
+    
+    if (pthread_create(&receive_thread, NULL, receive_messages, (void*)&thread_data) != 0) {
+        perror("Error creating thread");
+        return;
+    }
     
     printf("Now connected. write meissages or exit to end connection.\n");
                 
+    printf("Message: ");
     while (1) {
-        printf("Message: ");
         fgets(buffer, 1024, stdin);
         buffer[strcspn(buffer, "\n")] = 0;
         
@@ -57,23 +189,55 @@ void handle_broadcast_global(int client_fd, const char *username) {
         cJSON_Delete(root);
 
         // sending data for broadcast
-        printf("Sending JSON: %s\n", broadcast_json);
+        // printf("Sending JSON: %s\n", broadcast_json);
         send(client_fd, broadcast_json, strlen(broadcast_json), 0);
         free(broadcast_json);
         
         //send(client_fd, buffer, strlen(buffer), 0);
 
-        valread = read(client_fd, buffer, 1024 - 1);
-
-        if (valread <= 0) {
-            printf("Disconnected.\n");
-            break;
-        }
-        
-        buffer[valread] = '\0';
-        printf("Server responded with: %s\n", buffer);
-        memset(buffer, 0, sizeof(buffer));
     }
+    pthread_cancel(receive_thread);  // cancel thread
+    pthread_join(receive_thread, NULL);  // but gracefully, waiting for it to finish
+}
+
+void request_user_list(int client_fd) {
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "tipo", "LISTA");
+    
+    char *request_json = cJSON_Print(root);
+    cJSON_Delete(root);
+
+    // Enviar la solicitud al servidor
+    printf("Solicitando lista de usuarios\n");
+    send(client_fd, request_json, strlen(request_json), 0);
+    free(request_json);
+
+    // Recibir respuesta del servidor
+    char buffer[1024] = {0};
+    int valread = read(client_fd, buffer, 1023);
+    
+    if (valread <= 0) {
+        printf("Error al recibir la lista de usuarios.\n");
+        return;
+    }
+
+    buffer[valread] = '\0';  // Asegurar terminación de cadena
+    printf("Respuesta recibida: %s\n", buffer);
+
+    // Parsear el JSON recibido
+    cJSON *response = cJSON_Parse(buffer);
+    if (response == NULL) {
+        printf("Error al parsear la respuesta del servidor.\n");
+        return;
+    }
+
+    printf("Usuarios conectados:\n");
+    cJSON *item;
+    cJSON_ArrayForEach(item, response) {
+        printf("- %s\n", item->valuestring);
+    }
+
+    cJSON_Delete(response);
 }
 
 int main(int argc, char const* argv[]) {
@@ -94,37 +258,9 @@ int main(int argc, char const* argv[]) {
         return 1; 
     }
 
-    // port to number
-    int port = atoi(argv[3]);
+    int socket = client_connection(50213, argv[2]);
 
-    // user data
-    printf("client: %s\n", argv[0]);
-    printf("username: %s\n", argv[1]);
-    printf("Connecting to server in IP: %s, port: %d...\n", argv[2], port);
-
-    int status, client_fd;
-    struct sockaddr_in serv_addr;
-    
-
-    // client socket
-    if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        printf("\nSocket creation error \n");
-        return -1;
-    }
-
-    // server address
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(port);  
-
-    // ip text to binary
-    if (inet_pton(AF_INET, argv[2], &serv_addr.sin_addr) <= 0) {
-        printf("\nInvalid address/ Address not supported \n");
-        return -1;
-    }
-
-    // connect
-    if ((status = connect(client_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr))) < 0) {
-        printf("\nConnection Failed \n");
+    if (socket < 0) {
         return -1;
     }
     
@@ -132,6 +268,12 @@ int main(int argc, char const* argv[]) {
     printf("+-----------------------------------------------------------+\n");
     printf("|                  WELCOME TO CHAT SERVER                   |\n");
     printf("+-----------------------------------------------------------+\n");
+    
+    // REGISTRAR A UN MEN    
+    if(client_register(argv[1], socket) == NULL) {
+        return -1;
+    }
+
     while(stay){
         int chatSelection;
         printf("\nSelect an action \n");
@@ -154,7 +296,7 @@ int main(int argc, char const* argv[]) {
                 printf("|                        GLOBAL CHAT                        |\n");
                 printf("+-----------------------------------------------------------+\n");
   
-                handle_broadcast_global(client_fd, argv[1]);
+                handle_broadcast_global(socket, argv[1]);
                 
                 break;
             case 2:
@@ -175,15 +317,36 @@ int main(int argc, char const* argv[]) {
                 printf("+-----------------------------------------------------------+\n");
                 printf("|                 LIST ALL USERS CONNECTED                  |\n");
                 printf("+-----------------------------------------------------------+\n");
-                // self explanatory
+                cJSON *main_list = cJSON_Duplicate(client_list(socket), 1);
+                
+                if (main_list == NULL) {
+                    return -1;
+                }
+
+                print_users(cJSON_GetObjectItem(main_list, "respuesta"));
                 break;
             case 5:
                 printf("+-----------------------------------------------------------+\n");
                 printf("|                   SEE INFO ABOUT A USER                   |\n");
                 printf("+-----------------------------------------------------------+\n");
-                // list all users
-                // select one
-                // show username and ip address
+                char str[100];
+
+                cJSON *info_list = cJSON_Duplicate(client_list(socket), 1);
+                
+                if (info_list == NULL) {
+                    return -1;
+                }
+                printf("\n Select a User");
+                print_users(cJSON_GetObjectItem(info_list, "respuesta"));
+                
+                printf("\n Write the username\n  -> ");
+                scanf("%[^\n]s",str);
+                
+                cJSON *user_info = client_info(str, socket);
+                if (user_info == NULL) {
+                    printf("\n");
+                } 
+                print_user_info(cJSON_GetObjectItem(user_info, "respuesta"));
                 break;
             case 6:
                 int stillNeedsHelp = true;
@@ -272,13 +435,13 @@ int main(int argc, char const* argv[]) {
                 printf("|                          LOG OUT                          |\n");
                 printf("+-----------------------------------------------------------+\n");
                 printf("Bye\n");
-                handle_exit(client_fd, argv[1]);
+                handle_exit(socket, argv[1]);
                 stay = false;
                 break;
             default:
                 printf("Not an option :/\n");
         }
     }
-    close(client_fd);
+    close(socket);
     return 0;
 }
