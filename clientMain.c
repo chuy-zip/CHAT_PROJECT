@@ -285,7 +285,7 @@ void request_user_list(int client_fd) {
     cJSON_Delete(response);
 }
 
-int main(int argc, char const* argv[]) {
+int main(int argc, char const *argv[]) {
     // arguments check
     if (argc != 4) {
         printf("\nError: expected 4 arguments but found: %d", argc);
@@ -303,7 +303,8 @@ int main(int argc, char const* argv[]) {
         return 1; 
     }
 
-    int socket = client_connection(50213, argv[2]);
+    int port = atoi(argv[3]);
+    int socket = client_connection(port, argv[2]);
 
     if (socket < 0) {
         return -1;
