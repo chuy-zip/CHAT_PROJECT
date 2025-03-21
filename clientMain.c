@@ -349,8 +349,26 @@ int main(int argc, char const *argv[]) {
                 printf("+-----------------------------------------------------------+\n");
                 printf("|                       PRIVATE CHAT                        |\n");
                 printf("+-----------------------------------------------------------+\n");
+                
+                cJSON *connected_users = cJSON_Duplicate(client_list(socket), 1);
+                char user[20];
 
-                handle_dm(socket, argv[1], "Jorge");
+                if (connected_users == NULL) {
+                    return -1;
+                }
+
+                printf("Ingresa el número del usuario a enviar el mensaje: ");
+                char *respuesta =cJSON_GetObjectItem(connected_users, "respuesta")->valuestring;
+                cJSON *respuesta_parseada = cJSON_Parse(respuesta);
+                print_users(cJSON_GetObjectItem(connected_users, "respuesta"));
+
+                scanf("%20s", &user);
+                
+                char *selected_user = cJSON_GetObjectItem(respuesta_parseada, user)->valuestring;
+                cJSON *usuario_parseado = cJSON_Parse(selected_user);
+
+                handle_dm(socket, argv[1], cJSON_GetObjectItem(usuario_parseado, "usuario")->valuestring);
+
                 break;
             case 3:
                 printf("+-----------------------------------------------------------+\n");
@@ -369,6 +387,8 @@ int main(int argc, char const *argv[]) {
                 }
 
                 print_users(cJSON_GetObjectItem(main_list, "respuesta"));
+
+
                 break;
             case 5:
                 printf("+-----------------------------------------------------------+\n");
