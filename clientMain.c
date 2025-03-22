@@ -13,6 +13,7 @@
 #include "client/client_register.h"
 #include "client/client_list.h"
 #include "client/client_info.h"
+#include "client/client_state.h"
 
 
 #define BUFFER_SIZE_BROAD 1024
@@ -374,6 +375,12 @@ int main(int argc, char const *argv[]) {
                 printf("|                       CHANGE STATUS                       |\n");
                 printf("+-----------------------------------------------------------+\n");
                 // can change from active, ocuppied or inactive
+                int new_state;
+                char selected_state[10];
+                printf("Ingresa el número del estado al que quieres cambiar:\n1. Activo\n2. Ocupado\n");
+                scanf("%d", &new_state);
+                strcpy(selected_state, (new_state == 1) ? "Activo" : "Ocupado");
+                client_state(argv[1], selected_state, socket);
                 break;
             case 4:
                 printf("+-----------------------------------------------------------+\n");

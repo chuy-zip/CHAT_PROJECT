@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <cjson/cJSON.h>
 
+#include "client_state.h"
+
 #define BUFFER_SIZE 1024
 
 /*
@@ -16,7 +18,7 @@
 * @return cJSON*: Objeto JSON con los datos del cliente.
 * @return NULL: Error.
 */
-cJSON* client_state(char client_name[], char client_state[], int client_socket)
+cJSON* client_state(const char client_name[], const char client_state[], const int client_socket)
 {
     char server_response[BUFFER_SIZE];
     
