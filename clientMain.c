@@ -144,7 +144,6 @@ void* receive_messages(void* arg) {
         cJSON *nombre_destinatario = cJSON_GetObjectItemCaseSensitive(message_json, "nombre_destinatario");
         cJSON *mensaje = cJSON_GetObjectItemCaseSensitive(message_json, "mensaje");
 
-        
         if (accion != NULL && nombre_emisor != NULL && mensaje != NULL && strcmp(accion->valuestring, "BROADCAST") == 0) {
             printf("\n%s: %s\n", nombre_emisor->valuestring, mensaje->valuestring); // show message
 

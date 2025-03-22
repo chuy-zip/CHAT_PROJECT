@@ -90,7 +90,7 @@ void* handle_client(void* arg) {
                 cJSON *client_list_ip = cJSON_GetObjectItem(client_list->array[i], "direccionIP");
 
                 if (strcmp(client_name->valuestring, client_list_name->valuestring) == 0 || strcmp(client_ip, client_list_ip->valuestring) == 0) {
-                    // repeated_flag = true;
+                    repeated_flag = true;
                     break;
                 }
             }
