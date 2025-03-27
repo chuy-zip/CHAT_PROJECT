@@ -46,7 +46,9 @@ int info_response(int socket, char buffer[], int buffer_size, bool user_flag, cJ
     }
 
     // Enviando una respuesta con el usuario encontrado
-    cJSON_AddStringToObject(response, "respuesta", cJSON_Print(user_to_return));
+    cJSON_AddStringToObject(response, "tipo", "MOSTRAR");
+    cJSON_AddStringToObject(response, "usuario", cJSON_GetObjectItem(user_to_return, "usuario")->valuestring);
+    cJSON_AddStringToObject(response, "estado", cJSON_GetObjectItem(user_to_return, "estado")->valuestring);
 
     send(socket, cJSON_Print(response), strlen(cJSON_Print(response)), 0);
     printf("Message: %s\n sended to client.\n", cJSON_Print(response));

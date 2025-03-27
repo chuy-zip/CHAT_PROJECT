@@ -109,7 +109,7 @@ void handle_exit(int client_fd, const char *username) {
     cJSON_Delete(root);
 
     // sending data for exit
-    printf("Sending JSON: %s\n", exit_json);
+    // printf("Sending JSON: %s\n", exit_json);
     send(client_fd, exit_json, strlen(exit_json), 0);
     free(exit_json);
 }
@@ -398,9 +398,8 @@ int main(int argc, char const *argv[]) {
                     return -1;
                 }
 
-                char *respuesta =cJSON_GetObjectItem(connected_users, "respuesta")->valuestring;
-                cJSON *respuesta_parseada = cJSON_Parse(respuesta);
-                print_users(cJSON_GetObjectItem(connected_users, "respuesta"));
+                cJSON *respuesta = cJSON_GetObjectItem(connected_users, "usuarios");
+                print_users(respuesta); // To-Do: Fix this function to receive cJSON Array
                 
                 printf("Type the name of the user to chat with: ");
                 scanf("%20s", &user);
@@ -439,7 +438,7 @@ int main(int argc, char const *argv[]) {
                     return -1;
                 }
 
-                print_users(cJSON_GetObjectItem(main_list, "respuesta"));
+                print_users(cJSON_GetObjectItem(main_list, "usuarios"));
 
 
                 break;
@@ -455,7 +454,7 @@ int main(int argc, char const *argv[]) {
                     return -1;
                 }
                 printf("\n Select a User");
-                print_users(cJSON_GetObjectItem(info_list, "respuesta"));
+                print_users(cJSON_GetObjectItem(info_list, "usuarios"));
                 
                 printf("\n Write the username\n  -> ");
                 scanf("%[^\n]s",str);
@@ -464,7 +463,9 @@ int main(int argc, char const *argv[]) {
                 if (user_info == NULL) {
                     printf("\n");
                 } 
-                print_user_info(cJSON_GetObjectItem(user_info, "respuesta"));
+
+
+                print_user_info(user_info);
                 break;
             case 6:
                 int stillNeedsHelp = true;

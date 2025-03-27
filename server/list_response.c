@@ -20,7 +20,9 @@ int list_response(int socket, cJSON *users_to_return)
     cJSON *response = cJSON_CreateObject();
 
     // Enviando una respuesta con el usuario encontrado
-    cJSON_AddStringToObject(response, "respuesta", cJSON_Print(users_to_return));
+    cJSON_AddItemToObject(response, "accion", cJSON_CreateString("LISTA"));
+    cJSON_AddItemToObject(response, "usuarios", users_to_return);
+    
 
     send(socket, cJSON_Print(response), strlen(cJSON_Print(response)), 0);
     printf("Message: %s\n sended to client.\n", cJSON_Print(response));
