@@ -155,13 +155,16 @@ void* handle_client(void* arg) {
                     }
                 }
 
+                cJSON *state_to_change = cJSON_Parse(buffer);
+                cJSON *state = cJSON_GetObjectItem(client, "estado");
+
                 if(state_response(client_socket, buffer, user_flag) < 0 || user_flag == false) {
                     printf("Unable to find user");   
                 
                 } else {
                     printf("User found");
                     cJSON *state_to_change = cJSON_GetObjectItem(client_list->array[user_to_change_index], "estado");
-                    cJSON_ReplaceItemInObjectCaseSensitive(client_list->array[user_to_change_index], "estado", cJSON_CreateString(state_to_change->valuestring));
+                    cJSON_ReplaceItemInObjectCaseSensitive(client_list->array[user_to_change_index], "estado", cJSON_CreateString(state->valuestring));
                 }
         
             }  else if (tipo != NULL && strcmp(tipo->valuestring, "LISTA") == 0) {
