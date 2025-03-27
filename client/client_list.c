@@ -24,7 +24,9 @@ cJSON* client_list(int client_socket)
     
     // Añadiendo datos al objeto cliente
     cJSON *client = cJSON_CreateObject();
-    cJSON_AddStringToObject(client, "tipo", "LISTA");
+    cJSON_AddStringToObject(client, "accion", "LISTA");
+    cJSON_AddStringToObject(client, "nombre_usuario", "mimi");
+
 
     char *client_json = cJSON_Print(client);
 

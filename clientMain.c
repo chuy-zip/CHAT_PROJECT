@@ -247,7 +247,7 @@ void handle_broadcast_global(int client_fd, const char *username) {
 
 void request_user_list(int client_fd) {
     cJSON *root = cJSON_CreateObject();
-    cJSON_AddStringToObject(root, "tipo", "LISTA");
+    cJSON_AddStringToObject(root, "accion", "LISTA");
     
     char *request_json = cJSON_Print(root);
     cJSON_Delete(root);

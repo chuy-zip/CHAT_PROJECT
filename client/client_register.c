@@ -26,6 +26,8 @@ cJSON* client_register(const char client_name[], int client_socket)
     cJSON *client = cJSON_CreateObject();
     cJSON_AddStringToObject(client, "tipo", "REGISTRO");
     cJSON_AddStringToObject(client, "usuario", client_name);
+    // TODO: change this somehow
+    cJSON_AddStringToObject(client, "direccionIP", "172.16.1.55");
 
     char *client_json = cJSON_Print(client);
 
