@@ -11,7 +11,7 @@
 /*
 * @brief Responde a la solicitud "ESTADO" de un cliente
 * @param int: Socket del cliente
-* @param char[]: Buffer que contiene el JSON de la soliocitud
+* @param char[]: Buffer que contiene el JSON de la solicitud
 * @param bool: flag que indica si se encontró al usuario
 * @return cJSON: Respuesta a la solicitud
 */
