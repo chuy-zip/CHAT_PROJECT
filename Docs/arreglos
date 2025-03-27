@@ -1,0 +1,16 @@
+# A
+
+1. En el chat, quitar la lista
+
+    - Se tiene que pedir el nombre del usuario, en vez del numero en la lista 🫰
+
+2. Chat privado
+
+    - Solo muestre los mensajes que son DM, que no se muestren los mensajes BROADCAST.
+    - Que solo se muestren los mensajes entre los 2 usuarios en dm privado,
+    osea solo usuario 1 y usuario 2 pueden ver sus mensajes, y usuario 3 y 4 no pueden ver los mensajesde usuario 1 y 2.
+
+3. Listar y mostrar
+
+    - el JSON recive un "usuarios":[] (lista)
+    - cambiar el parser para no parsear un Json dentro de un Json

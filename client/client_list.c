@@ -14,11 +14,10 @@
 /*
 * @brief Obtiene la información de todos los usuarios conectados.
 * @param int: client_socket: Socket del cliente.
-* @return cJSON*: Objeto JSON con los datos de los clientes.
-* @note El JSON de respuesta tiene el siguiente formato: {"respuesta": {"0": {"nombre": "example", "direccionIP": "0.0.0.0.", ...}, "1": {"nombre": "example2", ...}}}
+* @return list: Lista de usuarios conectados.
 * @return NULL: Error.
 */
-cJSON* client_list(int client_socket, char *username[])
+cJSON* client_list(int client_socket, const char username[])
 {
     char server_response[BUFFER_SIZE];
     

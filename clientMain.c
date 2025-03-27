@@ -116,6 +116,8 @@ void handle_exit(int client_fd, const char *username) {
 
 typedef struct {
     int client_fd;
+    const char *username;
+    const char *to_username;
 } thread_data_t;
 
 void* receive_messages(void* arg) {
@@ -147,17 +149,56 @@ void* receive_messages(void* arg) {
 
         if (accion != NULL && nombre_emisor != NULL && mensaje != NULL && strcmp(accion->valuestring, "BROADCAST") == 0) {
             printf("\n%s: %s\n", nombre_emisor->valuestring, mensaje->valuestring); // show message
-
-        } else if (accion != NULL && nombre_emisor != NULL && nombre_destinatario != NULL && mensaje != NULL && strcmp(accion->valuestring, "DM") == 0) {
-            printf("\n%s: %s\n", nombre_emisor->valuestring, mensaje->valuestring); // show message
-        } else {
-            printf("Error: Bad JSON\n");
+            printf(": ");  // ask message
+            fflush(stdout);  // show 
         }
         
         cJSON_Delete(message_json);
 
-        printf(": ");  // ask message
-        fflush(stdout);  // show 
+    }
+
+    return NULL;
+}
+
+void* receive_messages_dm(void* arg) {
+    thread_data_t* data = (thread_data_t*)arg;
+    int client_fd = data->client_fd;
+    const char *username = data->username;
+    const char *to_username = data->to_username;
+    char buffer[BUFFER_SIZE_BROAD] = {0};
+
+    while (1) {
+        int valread = read(client_fd, buffer, BUFFER_SIZE_BROAD - 1);
+        
+        if (valread <= 0) {
+            printf("Disconnected.\n");
+            break;
+        }
+        
+        buffer[valread] = '\0';
+        
+        cJSON *message_json = cJSON_Parse(buffer);
+        
+        if (message_json == NULL) {
+            printf("Error al parsear el JSON.\n");
+            return NULL;
+        }
+        
+        cJSON *accion = cJSON_GetObjectItemCaseSensitive(message_json, "accion");
+        cJSON *nombre_emisor = cJSON_GetObjectItemCaseSensitive(message_json, "nombre_emisor");
+        cJSON *nombre_destinatario = cJSON_GetObjectItemCaseSensitive(message_json, "nombre_destinatario");
+        cJSON *mensaje = cJSON_GetObjectItemCaseSensitive(message_json, "mensaje");
+        
+        if (accion != NULL && nombre_emisor != NULL && nombre_destinatario != NULL && mensaje != NULL && strcmp(accion->valuestring, "DM") == 0) {
+            if (strcmp(nombre_emisor->valuestring, to_username) == 0 && strcmp(nombre_destinatario->valuestring, username) == 0) {
+                printf("\n%s: %s\n", nombre_emisor->valuestring, mensaje->valuestring); // show message
+                printf(": ");  // ask message
+                fflush(stdout);  // show 
+            }
+        }
+        
+        cJSON_Delete(message_json);
+
     }
 
     return NULL;
@@ -167,9 +208,9 @@ void handle_dm(int client_fd, const char *username, const char *to_username) {
     char buffer[1024] = {0};
     int valread;
     pthread_t receive_thread;
-    thread_data_t thread_data = {client_fd};
+    thread_data_t thread_data = {client_fd, username, to_username};
     
-    if (pthread_create(&receive_thread, NULL, receive_messages, (void*)&thread_data) != 0) {
+    if (pthread_create(&receive_thread, NULL, receive_messages_dm, (void*)&thread_data) != 0) {
         perror("Error creating thread");
         return;
     }
@@ -181,7 +222,7 @@ void handle_dm(int client_fd, const char *username, const char *to_username) {
         buffer[strcspn(buffer, "\n")] = 0;
         
         if (strcmp(buffer, "exit") == 0) {
-          printf("Closing global chat.\n");
+          printf("Closing private chat.\n");
           break;
         }
         
@@ -357,7 +398,7 @@ int main(int argc, char const *argv[]) {
                     return -1;
                 }
 
-                printf("Ingresa el número del usuario a enviar el mensaje: ");
+                printf("Type the name of the user to chat with: ");
                 char *respuesta =cJSON_GetObjectItem(connected_users, "respuesta")->valuestring;
                 cJSON *respuesta_parseada = cJSON_Parse(respuesta);
                 print_users(cJSON_GetObjectItem(connected_users, "respuesta"));
@@ -377,7 +418,7 @@ int main(int argc, char const *argv[]) {
                 // can change from active, ocuppied or inactive
                 int new_state;
                 char selected_state[10];
-                printf("Ingresa el número del estado al que quieres cambiar:\n1. Activo\n2. Ocupado\n");
+                printf("Select your new status:\n1. Active\n2. Bussy\n");
                 scanf("%d", &new_state);
                 strcpy(selected_state, (new_state == 1) ? "Activo" : "Ocupado");
                 client_state(argv[1], selected_state, socket);
