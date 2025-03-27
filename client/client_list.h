@@ -2,6 +2,6 @@
 #ifndef CLIENT_LIST_H
 #define CLIENT_LIST_H
 
-cJSON* client_list(int client_socket); // Declaración
+cJSON* client_list(int client_socket, char *username[]); // Declaración
 
 #endif // CLIENT_LIST_H

@@ -247,7 +247,7 @@ void handle_broadcast_global(int client_fd, const char *username) {
 
 void request_user_list(int client_fd) {
     cJSON *root = cJSON_CreateObject();
-    cJSON_AddStringToObject(root, "tipo", "LISTA");
+    cJSON_AddStringToObject(root, "accion", "LISTA");
     
     char *request_json = cJSON_Print(root);
     cJSON_Delete(root);
@@ -350,7 +350,7 @@ int main(int argc, char const *argv[]) {
                 printf("|                       PRIVATE CHAT                        |\n");
                 printf("+-----------------------------------------------------------+\n");
                 
-                cJSON *connected_users = cJSON_Duplicate(client_list(socket), 1);
+                cJSON *connected_users = cJSON_Duplicate(client_list(socket, argv[1]), 1);
                 char user[20];
 
                 if (connected_users == NULL) {
@@ -386,7 +386,7 @@ int main(int argc, char const *argv[]) {
                 printf("+-----------------------------------------------------------+\n");
                 printf("|                 LIST ALL USERS CONNECTED                  |\n");
                 printf("+-----------------------------------------------------------+\n");
-                cJSON *main_list = cJSON_Duplicate(client_list(socket), 1);
+                cJSON *main_list = cJSON_Duplicate(client_list(socket, argv[1]), 1);
                 
                 if (main_list == NULL) {
                     return -1;
@@ -402,7 +402,7 @@ int main(int argc, char const *argv[]) {
                 printf("+-----------------------------------------------------------+\n");
                 char str[100];
 
-                cJSON *info_list = cJSON_Duplicate(client_list(socket), 1);
+                cJSON *info_list = cJSON_Duplicate(client_list(socket, argv[1]), 1);
                 
                 if (info_list == NULL) {
                     return -1;

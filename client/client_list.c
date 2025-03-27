@@ -18,14 +18,14 @@
 * @note El JSON de respuesta tiene el siguiente formato: {"respuesta": {"0": {"nombre": "example", "direccionIP": "0.0.0.0.", ...}, "1": {"nombre": "example2", ...}}}
 * @return NULL: Error.
 */
-cJSON* client_list(int client_socket)
+cJSON* client_list(int client_socket, char *username[])
 {
     char server_response[BUFFER_SIZE];
     
     // Añadiendo datos al objeto cliente
     cJSON *client = cJSON_CreateObject();
     cJSON_AddStringToObject(client, "accion", "LISTA");
-    cJSON_AddStringToObject(client, "nombre_usuario", "mimi");
+    cJSON_AddStringToObject(client, "nombre_usuario", username);
 
 
     char *client_json = cJSON_Print(client);
