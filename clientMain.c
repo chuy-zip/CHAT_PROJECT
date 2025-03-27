@@ -398,17 +398,23 @@ int main(int argc, char const *argv[]) {
                     return -1;
                 }
 
-                printf("Type the name of the user to chat with: ");
                 char *respuesta =cJSON_GetObjectItem(connected_users, "respuesta")->valuestring;
                 cJSON *respuesta_parseada = cJSON_Parse(respuesta);
                 print_users(cJSON_GetObjectItem(connected_users, "respuesta"));
-
+                
+                printf("Type the name of the user to chat with: ");
                 scanf("%20s", &user);
                 
-                char *selected_user = cJSON_GetObjectItem(respuesta_parseada, user)->valuestring;
-                cJSON *usuario_parseado = cJSON_Parse(selected_user);
+                cJSON *user_to_dm = client_info(user, socket);
+                if (user_to_dm == NULL) {
+                    printf("Error getting user");
+                
+                } else {
+                    cJSON *parsed_user = cJSON_GetObjectItem(user_to_dm, "respuesta");
+                    cJSON *double_parsed_user = cJSON_Parse(parsed_user->valuestring);
+                    handle_dm(socket, argv[1], cJSON_GetObjectItem(double_parsed_user, "usuario")->valuestring);
+                } 
 
-                handle_dm(socket, argv[1], cJSON_GetObjectItem(usuario_parseado, "usuario")->valuestring);
 
                 break;
             case 3:
