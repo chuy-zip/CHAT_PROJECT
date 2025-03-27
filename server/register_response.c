@@ -24,7 +24,7 @@ int register_response(int socket, char buffer[], bool repeated_flag)
     cJSON *usuario = cJSON_GetObjectItem(client, "usuario");
     cJSON *direccion = cJSON_GetObjectItem(client, "direccionIP");
 
-    if (tipo == NULL || usuario == NULL || direccion ) {
+    if (tipo == NULL || usuario == NULL || direccion == NULL ) {
         printf("Incorrect client data\n");
         cJSON_AddStringToObject(response, "respuesta", "ERROR");
         cJSON_AddStringToObject(response, "razon", "Datos de usuario inválidos");

@@ -20,12 +20,21 @@
 */
 cJSON* client_register(const char client_name[], int client_socket)
 {
+    struct sockaddr_in client_addr;
+    socklen_t addr_len = sizeof(client_addr);
+    if (getsockname(client_socket, (struct sockaddr *)&client_addr, &addr_len) == -1) {
+        perror("Error obtaining client address");
+        close(client_socket);
+        return NULL;
+    }
+
     char server_response[BUFFER_SIZE];
     
     // Añadiendo datos al objeto cliente
     cJSON *client = cJSON_CreateObject();
     cJSON_AddStringToObject(client, "tipo", "REGISTRO");
     cJSON_AddStringToObject(client, "usuario", client_name);
+    cJSON_AddStringToObject(client, "direccionIP", inet_ntoa(client_addr.sin_addr));
 
     char *client_json = cJSON_Print(client);
 

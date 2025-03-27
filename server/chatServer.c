@@ -40,8 +40,6 @@ void* handle_client(void* arg) {
     int client_socket = client_info->socket;
     Array *client_list = client_info->client_array;
     char buffer[BUFFER_SIZE] = {0};
-    char client_ip[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &(client_info->address.sin_addr), client_ip, INET_ADDRSTRLEN);
     char* welcome_message = "\nServer got message\n";
     
     while (1) {
@@ -69,7 +67,6 @@ void* handle_client(void* arg) {
             continue;
         }
         
-        cJSON_AddStringToObject(client, "direccionIP", client_ip);
         cJSON_AddNumberToObject(client, "socket", client_socket);
         
         // printing json
@@ -80,6 +77,7 @@ void* handle_client(void* arg) {
         // checking tipo of json
         cJSON *tipo = cJSON_GetObjectItemCaseSensitive(client, "tipo");
         cJSON *client_name = cJSON_GetObjectItem(client, "usuario");
+        cJSON *client_ip = cJSON_GetObjectItem(client, "direccionIP");
         
         // Verificando "endpoints"
         if (tipo != NULL && strcmp(tipo->valuestring, "REGISTRO") == 0) {
@@ -89,7 +87,7 @@ void* handle_client(void* arg) {
                 cJSON *client_list_name = cJSON_GetObjectItem(client_list->array[i], "usuario");
                 cJSON *client_list_ip = cJSON_GetObjectItem(client_list->array[i], "direccionIP");
 
-                if (strcmp(client_name->valuestring, client_list_name->valuestring) == 0 || strcmp(client_ip, client_list_ip->valuestring) == 0) {
+                if (strcmp(client_name->valuestring, client_list_name->valuestring) == 0 || strcmp(client_ip->valuestring, client_list_ip->valuestring) == 0) {
                     repeated_flag = true;
                     break;
                 }
@@ -133,7 +131,7 @@ void* handle_client(void* arg) {
                         break;
                     }
                 }
-
+                
                 if(info_response(client_socket, buffer, BUFFER_SIZE, user_flag, user_to_return) < 0 || user_flag == false) {
                     printf("Unable to find user");   
                 
