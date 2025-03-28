@@ -19,37 +19,38 @@
 #define BUFFER_SIZE_BROAD 1024
 
 void print_users(cJSON *users_list) {
-    char *respuesta = users_list->valuestring;
+    if (users_list == NULL) {
+        printf("Error: No user list available.\n");
+        return;
+    }
 
-    cJSON *respuesta_parseada = cJSON_Parse(respuesta);
+    // Obtener el array de usuarios
+    cJSON *usuarios = cJSON_GetObjectItem(users_list, "usuarios");
+    if (!cJSON_IsArray(usuarios)) {
+        printf("Error: Invalid user list format.\n");
+        return;
+    }
 
-    cJSON *cliente;
+    cJSON *usuario;
     int i = 0;
-    cJSON_ArrayForEach(cliente, respuesta_parseada) {
-        if (cJSON_IsString(cliente)) {
-            cJSON *cliente_json = cJSON_Parse(cliente->valuestring);
-            if (cliente_json != NULL) {
-                
-                cJSON_AddNumberToObject(cliente_json, "id", i);
-                cJSON *id = cJSON_GetObjectItem(cliente_json, "id");
-                cJSON *usuario = cJSON_GetObjectItem(cliente_json, "usuario");
-                cJSON *ip = cJSON_GetObjectItem(cliente_json, "direccionIP");
-                cJSON *socket = cJSON_GetObjectItem(cliente_json, "socket");
-                cJSON *estado = cJSON_GetObjectItem(cliente_json, "estado");
-                
-                if (id && usuario && ip && socket && estado) {
-                    printf("\n%d - ", id->valueint);
-                    printf("User name: %s\n", usuario->valuestring);
-                    printf("     Status: %s\n", estado->valuestring);
-                    printf("\n----------------------------\n");
-                }
+    cJSON_ArrayForEach(usuario, usuarios) {
+        if (cJSON_IsString(usuario)) {
+            char *user_str = usuario->valuestring;
+            
+            // Separar la cadena por '-'
+            char *username = strtok(user_str, "-");
+            char *ip = strtok(NULL, "-");
 
-                i = i + 1;
-
-                cJSON_Delete(cliente_json);
+            printf("\n----------------------------\n");
+            printf("%d - Username: %s\n", i, username);
+            if (ip != NULL) {
+                printf("     IP: %s\n", ip);
             }
+            printf("----------------------------\n");
+
+            i++;
         }
-    }    
+    }
 }
 
 void print_user_info(cJSON *user_info) {
@@ -58,37 +59,32 @@ void print_user_info(cJSON *user_info) {
         return;
     }
 
-    char *respuesta = user_info->valuestring;
-    cJSON *parsed_user = cJSON_Parse(respuesta);
+    cJSON *usuario = cJSON_GetObjectItem(user_info, "usuario");
+    cJSON *estado = cJSON_GetObjectItem(user_info, "estado");
 
-    if (parsed_user == NULL) {
-        printf("Error parsing user information.\n");
+    if (!usuario || !cJSON_IsString(usuario) || !estado || !cJSON_IsString(estado)) {
+        printf("Error: Invalid user information format.\n");
         return;
     }
 
-    cJSON *usuario = cJSON_GetObjectItem(parsed_user, "usuario");
-    cJSON *ip = cJSON_GetObjectItem(parsed_user, "direccionIP");
-    cJSON *socket = cJSON_GetObjectItem(parsed_user, "socket");
-    cJSON *estado = cJSON_GetObjectItem(parsed_user, "estado");
+    char *user_str = usuario->valuestring;
 
-    if (!usuario || !ip || !socket || !estado) {
-        printf("Error: Missing user information.\n");
-        cJSON_Delete(parsed_user);
-        return;
-    }
+    // Separar la cadena por '-'
+    char *username = strtok(user_str, "-");
+    char *ip = strtok(NULL, "-");
+    char *socket = strtok(NULL, "-");
 
     printf("\n----------------------------\n");
-    printf("%s's Data\n", usuario->valuestring);
-    printf(" - IP Address: %s\n", ip->valuestring);
-    printf(" - Socket: %d\n", socket->valueint);
-    printf(" - Status: %s\n", estado->valuestring);
+    printf("%s's Data\n", username);
+    if (ip != NULL) {
+        printf("     - IP: %s\n", ip);
+    }
+    if (socket != NULL) {
+        printf("     - Socket: %s\n", socket);
+    }
+    printf("     - Status: %s\n", estado->valuestring);
     printf("----------------------------\n");
-
-    // Liberar memoria del JSON parseado
-    cJSON_Delete(parsed_user);
 }
-
-
 
 // checking if string is number
 bool is_number(const char *s) {
@@ -438,7 +434,7 @@ int main(int argc, char const *argv[]) {
                     return -1;
                 }
 
-                print_users(cJSON_GetObjectItem(main_list, "usuarios"));
+                print_users(main_list);
 
 
                 break;
@@ -454,7 +450,7 @@ int main(int argc, char const *argv[]) {
                     return -1;
                 }
                 printf("\n Select a User");
-                print_users(cJSON_GetObjectItem(info_list, "usuarios"));
+                print_users(info_list);
                 
                 printf("\n Write the username\n  -> ");
                 scanf("%[^\n]s",str);
