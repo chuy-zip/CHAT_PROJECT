@@ -8,6 +8,8 @@
 #include <pthread.h>
 #include <cjson/cJSON.h>
 #include <sys/socket.h>
+#include <time.h>
+
 #include "register_response.c"
 #include "info_response.c"
 #include "state_response.c"
@@ -19,6 +21,8 @@
 
 #define MAX_CLIENTS 10
 #define BUFFER_SIZE 1024 
+pthread_mutex_t client_list_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 bool is_number(const char *s) {
     for (int i = 0; s[i] != '\0'; i++) {
         if (!isdigit(s[i])) {
@@ -31,9 +35,54 @@ bool is_number(const char *s) {
 typedef struct {
     int socket;
     struct sockaddr_in address;
-    char username[50];
+    cJSON *username;
+    time_t last_active;
     Array *client_array;
 } client_info_t;
+
+void* handle_inactivity(void* arg) {
+    client_info_t* client_info = (client_info_t*)arg;
+    int client_socket = client_info->socket;
+    Array *client_list = client_info->client_array;
+    
+    while (1) {
+        sleep(1);
+        
+        time_t last_active = client_info->last_active;
+        time_t current_time = time(NULL);
+
+        if (current_time - last_active > 10) {
+            bool user_found = false;
+            int user_index = -1;
+
+            for (size_t i = 0; i < client_list->used; i++) {
+                cJSON *client_list_name = cJSON_GetObjectItem(client_list->array[i], "usuario");
+
+                if (strcmp(client_info->username->valuestring, client_list_name->valuestring) == 0) {
+                    user_found = true;
+                    user_index = i;
+                    break;
+                }
+            }
+
+            if (!user_found) {
+                printf("Unable to find user: %s\n", client_info->username->valuestring);
+            
+            } else if (strcmp(cJSON_GetObjectItem(client_list->array[user_index], "estado")->valuestring, "Inactivo") != 0) {
+                printf("Inactive user found: %s\n", client_info->username->valuestring);
+                pthread_mutex_lock(&client_list_mutex);
+                cJSON_ReplaceItemInObjectCaseSensitive(
+                    client_list->array[user_index], 
+                    "estado", 
+                    cJSON_CreateString("Inactivo")
+                );
+                pthread_mutex_unlock(&client_list_mutex);
+            }
+        }
+    }
+    return NULL;
+}
+
 
 void* handle_client(void* arg) {
     client_info_t* client_info = (client_info_t*)arg;
@@ -41,13 +90,15 @@ void* handle_client(void* arg) {
     Array *client_list = client_info->client_array;
     char buffer[BUFFER_SIZE] = {0};
     char* welcome_message = "\nServer got message\n";
-    
+
     while (1) {
         // reading user 
         int valread = read(client_socket, buffer, BUFFER_SIZE);
         if (valread <= 0) {
             printf("\nClient disconnected.\n");
+            pthread_mutex_lock(&client_list_mutex);
             remove_client(client_list, client_socket);
+            pthread_mutex_unlock(&client_list_mutex);
             break;
         }
         
@@ -82,31 +133,41 @@ void* handle_client(void* arg) {
         // Verificando "endpoints"
         if (tipo != NULL && strcmp(tipo->valuestring, "REGISTRO") == 0) {
             bool repeated_flag = false;
-
+            
             for (size_t i = 0; i < client_list->used; i++) {
                 cJSON *client_list_name = cJSON_GetObjectItem(client_list->array[i], "usuario");
                 cJSON *client_list_ip = cJSON_GetObjectItem(client_list->array[i], "direccionIP");
-
+                
                 if (strcmp(client_name->valuestring, client_list_name->valuestring) == 0 || strcmp(client_ip->valuestring, client_list_ip->valuestring) == 0) {
                     // repeated_flag = true;
                     break;
                 }
             }
-
+            
             if(register_response(client_socket, buffer, repeated_flag) < 0 || repeated_flag == true) {
                 printf("Unable to register");
                 
             } else {
                 cJSON_DeleteItemFromObject(client, "tipo");
                 cJSON_AddStringToObject(client, "estado", "Activo");
+                pthread_mutex_lock(&client_list_mutex);
                 insert_array(client_list, client);
+                pthread_mutex_unlock(&client_list_mutex);
                 printf("\nUser registered successfully!\n");
+                client_info->username = cJSON_Duplicate(client_name, 1);
+                pthread_t inactive_thread;
+                if (pthread_create(&inactive_thread, NULL, handle_inactivity, (void*)client_info) != 0) {
+                    perror("Error creating thread");
+                    free(client_info);
+                }
                 for (size_t i = 0; i < client_list->used; i++) {
                     char *client_json_str = cJSON_Print(client_list->array[i]);
                     printf("\nCliente %zu:\n%s\n", i + 1, client_json_str);
                     free(client_json_str);
                 }
             }
+
+            client_info->last_active = time(NULL);
     
         }   else if (tipo != NULL && strcmp(tipo->valuestring, "EXIT") == 0) {
                 // free the user
@@ -114,7 +175,9 @@ void* handle_client(void* arg) {
                 if (usuario != NULL) {
                     printf("User: %s requested to exit.\n", usuario->valuestring);
                 }
+                pthread_mutex_lock(&client_list_mutex);
                 remove_client(client_list, client_socket);
+                pthread_mutex_unlock(&client_list_mutex);
                 cJSON_Delete(client); 
                 break;
         
@@ -138,6 +201,8 @@ void* handle_client(void* arg) {
                 } else {
                     printf("User found");
                 }
+
+                client_info->last_active = time(NULL);
         
             }   else if (tipo != NULL && strcmp(tipo->valuestring, "ESTADO") == 0) {
                 bool user_flag = false;
@@ -164,6 +229,8 @@ void* handle_client(void* arg) {
                     cJSON *state_to_change = cJSON_GetObjectItem(client_list->array[user_to_change_index], "estado");
                     cJSON_ReplaceItemInObjectCaseSensitive(client_list->array[user_to_change_index], "estado", cJSON_CreateString(state->valuestring));
                 }
+
+                client_info->last_active = time(NULL);
         
             }
         
@@ -199,6 +266,8 @@ void* handle_client(void* arg) {
                 cJSON_Delete(response);
                 free(response_str);
             }
+
+            client_info->last_active = time(NULL);
 
         } else if (accion != NULL && strcmp(accion->valuestring, "DM") == 0) {
             cJSON *nombre_emisor = cJSON_GetObjectItemCaseSensitive(client, "nombre_emisor");
@@ -250,6 +319,9 @@ void* handle_client(void* arg) {
             } else {
                 printf("Success");
             }
+
+            client_info->last_active = time(NULL);
+
         }
          
 
@@ -337,6 +409,7 @@ int main(int argc, char *argv[]) {
         client_info->socket = new_socket;
         client_info->address = address;
         client_info->client_array = &client_list;
+        client_info->last_active = time(NULL);
 
         // thread for handling connect
         pthread_t thread_id;
