@@ -32,5 +32,5 @@ Cliente
 ./menu [username] [ip_servidor] [puerto_servidor]
 ```
 - [username] puede ser cualquier nombre
-- [ip_servidor] debe de ser la ip del servidor - <span style="background-color:rgb(130, 62, 255)">0.0.0.0</span> si el servidor es local
+- [ip_servidor] debe de ser la ip del servidor - <mark>0.0.0.0</mark> si el servidor es local
 - [puerto_servidor] el puerto en el que el servidor ue levantado
