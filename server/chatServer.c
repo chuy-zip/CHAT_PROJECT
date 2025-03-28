@@ -69,7 +69,7 @@ void* handle_inactivity(void* arg) {
                 printf("Unable to find user: %s\n", client_info->username->valuestring);
             
             } else if (strcmp(cJSON_GetObjectItem(client_list->array[user_index], "estado")->valuestring, "Inactivo") != 0) {
-                printf("Inactive user found: %s\n", client_info->username->valuestring);
+                printf("Inactive user found\n: %s\n", client_info->username->valuestring);
                 pthread_mutex_lock(&client_list_mutex);
                 cJSON_ReplaceItemInObjectCaseSensitive(
                     client_list->array[user_index], 
@@ -139,7 +139,7 @@ void* handle_client(void* arg) {
                 cJSON *client_list_ip = cJSON_GetObjectItem(client_list->array[i], "direccionIP");
                 
                 if (strcmp(client_name->valuestring, client_list_name->valuestring) == 0 || strcmp(client_ip->valuestring, client_list_ip->valuestring) == 0) {
-                    // repeated_flag = true;
+                    repeated_flag = true;
                     break;
                 }
             }
@@ -199,7 +199,7 @@ void* handle_client(void* arg) {
                     printf("Unable to find user");   
                 
                 } else {
-                    printf("User found");
+                    printf("User found\n");
                 }
 
                 client_info->last_active = time(NULL);
@@ -225,7 +225,7 @@ void* handle_client(void* arg) {
                     printf("Unable to find user");   
                 
                 } else {
-                    printf("User found");
+                    printf("User found\n");
                     cJSON *state_to_change = cJSON_GetObjectItem(client_list->array[user_to_change_index], "estado");
                     cJSON_ReplaceItemInObjectCaseSensitive(client_list->array[user_to_change_index], "estado", cJSON_CreateString(state->valuestring));
                 }
