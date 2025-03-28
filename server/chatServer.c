@@ -165,20 +165,6 @@ void* handle_client(void* arg) {
                     cJSON_ReplaceItemInObjectCaseSensitive(client_list->array[user_to_change_index], "estado", cJSON_CreateString(state->valuestring));
                 }
         
-            }  else if (tipo != NULL && strcmp(tipo->valuestring, "LISTA") == 0) {
-                cJSON *users_list = cJSON_CreateObject();
-                char str[20];
-
-                for (size_t i = 0; i < client_list->used; i++) {
-                    sprintf(str, "%ld", i);
-                    cJSON_AddStringToObject(users_list, str, cJSON_Print(client_list->array[i]));
-                }
-
-                if (list_response(client_socket, users_list) < 0) {
-                    printf("Unable to get users list");
-                } else {
-                    printf("Success");
-                }
             }
         
         cJSON *accion = cJSON_GetObjectItemCaseSensitive(client, "accion");
@@ -248,9 +234,15 @@ void* handle_client(void* arg) {
         } 
         else if (accion != NULL && strcmp(accion->valuestring, "LISTA") == 0) {
             cJSON *users_list = cJSON_CreateArray();
-
+            
             for (size_t i = 0; i < client_list->used; i++) {
-                cJSON_AddItemToArray(users_list, cJSON_CreateString(cJSON_GetObjectItem(client_list->array[i], "usuario")->valuestring));
+                cJSON *username_to_list = cJSON_GetObjectItem(client_list->array[i], "usuario");
+                cJSON *direccion_to_list = cJSON_GetObjectItem(client_list->array[i], "direccionIP");
+                cJSON *estado_to_list = cJSON_GetObjectItem(client_list->array[i], "estado");
+                char formatted_string[50];
+
+                sprintf(formatted_string, "%s-%s-%s", username_to_list->valuestring, direccion_to_list->valuestring, estado_to_list->valuestring);
+                cJSON_AddItemToArray(users_list, cJSON_CreateString(formatted_string));
             }
 
             if (list_response(client_socket, users_list) < 0) {

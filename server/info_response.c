@@ -46,8 +46,19 @@ int info_response(int socket, char buffer[], int buffer_size, bool user_flag, cJ
     }
 
     // Enviando una respuesta con el usuario encontrado
+    cJSON *user_array = cJSON_CreateArray();
+    char formatted_string[50];
+
+    cJSON *username_to_list = cJSON_GetObjectItem(user_to_return, "usuario");
+    cJSON *direccion_to_list = cJSON_GetObjectItem(user_to_return, "direccionIP");
+    cJSON *estado_to_list = cJSON_GetObjectItem(user_to_return, "estado");
+    cJSON *socket_to_list = cJSON_GetObjectItem(user_to_return, "socket");
+
+    sprintf(formatted_string, "%s-%s-%d", username_to_list->valuestring, direccion_to_list->valuestring, socket_to_list->valueint);
+    cJSON_AddItemToArray(user_to_return, cJSON_CreateString(formatted_string));
+
     cJSON_AddStringToObject(response, "tipo", "MOSTRAR");
-    cJSON_AddStringToObject(response, "usuario", cJSON_GetObjectItem(user_to_return, "usuario")->valuestring);
+    cJSON_AddStringToObject(response, "usuario", formatted_string);
     cJSON_AddStringToObject(response, "estado", cJSON_GetObjectItem(user_to_return, "estado")->valuestring);
 
     send(socket, cJSON_Print(response), strlen(cJSON_Print(response)), 0);
