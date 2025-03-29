@@ -8,6 +8,9 @@
 ```c
 cjson
 ```
+```c
+gcc
+```
 
 ## ¿Cómo correr el código?
 
